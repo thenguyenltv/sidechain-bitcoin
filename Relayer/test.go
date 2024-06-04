@@ -12,14 +12,44 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 )
+
+// This is a map of Bitcoin addresses to Ethereum addresses
+var addressMap = map[string]string{
+	"bitcoinTestnetAddress1": "ethereumAddress1",
+	// Add more addresses here
+}
+
+func isTargetingSidechain(btcTx *wire.MsgTx) bool {
+	// Check each output of the transaction
+	for _, out := range btcTx.TxOut {
+		// Get the Bitcoin address of the output
+		_, addresses, _, err := txscript.ExtractPkScriptAddrs(out.PkScript, &chaincfg.TestNet3Params)
+		if err != nil {
+			log.Fatalf("Failed to extract addresses from transaction output: %v", err)
+		}
+
+		// Check if any of the addresses are in the address map
+		for _, addr := range addresses {
+			if _, ok := addressMap[addr.EncodeAddress()]; ok {
+				// This transaction is targeting the side chain
+				return true
+			}
+		}
+	}
+
+	// This transaction is not targeting the side chain
+	return false
+}
 
 func convertToEthTransaction(btcTx *wire.MsgTx, ethClient *ethclient.Client) (*types.Transaction, error) {
 
@@ -42,7 +72,7 @@ func convertToEthTransaction(btcTx *wire.MsgTx, ethClient *ethclient.Client) (*t
 func relayTxToSidechain(ethClient *ethclient.Client, tx *types.Transaction) error {
 	// Create a new signer to sign the transaction
 	// This example assumes you have the private key available to sign the transaction
-	privateKey, err := crypto.HexToECDSA("75e4d6a5cfeb2314eb0ee58e4081cf16165b4e1556dc2fe94a0d664dbcccb278")
+	privateKey, err := crypto.HexToECDSA("6f41a8e821ef879941952772d82a9b0cf91dbc93920ff7d5e730fb24c5c538b6")
 	if err != nil {
 		return fmt.Errorf("failed to load private key: %v", err)
 	}
@@ -101,14 +131,16 @@ func main() {
 				}
 
 				for _, tx := range block.Transactions {
-					ethTx, err := convertToEthTransaction(tx, ethClient) // Pass ethClient here
-					if err != nil {
-						log.Fatalf("Failed to convert Bitcoin transaction to Ethereum transaction: %v", err)
-					}
+					if isTargetingSidechain(tx) {
+						ethTx, err := convertToEthTransaction(tx, ethClient) // Pass ethClient here
+						if err != nil {
+							log.Fatalf("Failed to convert Bitcoin transaction to Ethereum transaction: %v", err)
+						}
 
-					err = relayTxToSidechain(ethClient, ethTx)
-					if err != nil {
-						log.Fatalf("Failed to relay transaction to sidechain: %v", err)
+						err = relayTxToSidechain(ethClient, ethTx)
+						if err != nil {
+							log.Fatalf("Failed to relay transaction to sidechain: %v", err)
+						}
 					}
 				}
 
