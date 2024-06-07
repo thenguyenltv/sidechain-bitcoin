@@ -1,0 +1,5 @@
+1. create privatekey -> public key
+2. construct redeem script
+    M <Public Key 1> <Public Key 2> ... <Public Key N> N OP_CHECKMULTISIG
+3. hash redeem script
+4. create p2sh address

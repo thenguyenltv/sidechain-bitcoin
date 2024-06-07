@@ -1,0 +1,66 @@
+[
+  {
+    "address": "2MugXMWT9ddCZ8RREqxMQhvYQJdXNjEdxnt",
+    "walletType": "5-of-7",
+    "witness": [
+      "cVTujY5aJyGLVcMhAGpafneDBAaVrGJmNTuGre78Xe8ceT3fpjZK",
+      "cUTorEezRyrP4DasT4H75PCZPQSFMakPkL398s6WtTHyNJcFw2yy",
+      "cNc6XkWa1pBvteBSSLZ5h1CBmyZXpV9dHu4PAi6s4PBVa6KkjXJt",
+      "cQH1Y5kiVduANAiJkUMi7PmH6GAHaTfSaN2c1sTxcsTY9LjLT2T6",
+      "cNUyWpB6So75REa22yhfHqENUcFJ8ah551LiNgXF3mHnzF2UoEyA",
+      "cNTwDB1RQpRhmVKVjxaGK3MqBwFpaatYFwCPC1YnMjzwnHB5sesb",
+      "cSVD9EScmE57EEmccUJw8wgdXZwqDFdwQvoWwpwQZHsEoi6byj1u"
+    ]
+  },
+  {//faucet
+    "address": "2NEK1JNgomGtJ8THkPreWuuHZgSdGJBLFBX",
+    "walletType": "9-of-15",
+    "witness": [
+      "cQ1PJFbkLF8wmhJsTTa7ePCHyeCKSNxQkdZTtoeKmveKz1bgsff2",
+      "cV32QNKpZU4Zi5j5amwzbXXGRbgBroRXfp5my9PAhruNUNEYtJGs",
+      "cTApzhf8goKjKQZG3QYSEDiYSzR6FShVszsNh3jmmsBDGHbznfFD",
+      "cNQziAx8NNtLErUsHstGduqTWEFwcWMyRxqn4vZU2rBbQKGYVd2h",
+      "cPde9vjYhwhMAVbQUjny9URQj693k3hq7PqYt9F7VS3U4bNxbWNW",
+      "cQKf3qfkdA373yZqRfFRmnNX9Np5BR6U8hR9UfgJKeHouaErZkzd",
+      "cS3cmZwDoRkmuDUyv8uSoS7ZvHCaDoXzz8vk5En27cB9UK5kwYmn",
+      "cRauJQuQr2uahz1e3Ya8L8oJFz3HWFzrtNDJ1rq1wjivGJCDTiB3",
+      "cQXzvK3ikPhyqgdbeTeqjPyjmvRof2pcWazL7cQbE6pwESNVkfwM",
+      "cSPpQuJRnCe8SMKdB6oQGKpYEZuLk4sFAcCkbD1ACkiD3VF89ZNn",
+      "cTsqg6YqAKnfCBc83eYqvLJk94X3S8G7XRwknwSFeEKiM3bhxmBH",
+      "cMgrzs9eqf7CNfLGvqCyuMBepFimHwaGkPbsdsCS1UZuEnV5bP28",
+      "cPXDSgKaqRFTfM1C9Fy3Bb7vZu1FArzBWYoCfQnM1WuxQSR1sTnB",
+      "cRY4td7qjDn6K6GY41qJAWYTpmqrYKscJK783rG9iqjU8koBKjGM",
+      "cSJn3qGP3KpJtmjWSaqZjeTERzDjw2DrgQPzdDi971Yj1EaNoTU7"
+    ]
+  },
+  {// faucet
+    "address": "2N55N2zFXrd7p5BYwMqp6iApKKCRuAC2RQ2",
+    "walletType": "8-of-8",
+    "witness": [
+      "cPKoRTfRGgHQ6SCujw5HgA8hr7wYyHT4h4fXA4gCaKD1dXXXkYsP",
+      "cP9ZH9jsoWV3dL4FBRGkzVrF4kFo7aqSbGQTdQGLij2Jhv3mD9pa",
+      "cTnaehjbcLoDXJniAZmG269jneVFKvDcC2NgqhU3AUNMXsoPqrsH",
+      "cVp5sWTbwEkqQXCZmwTKsMTBfZAM9n1X1M8nYC8Htk5drnfpTJTn",
+      "cQy72aonHM1268FgyG5zRXcX1ij7hYXQuMUjpMEeCSYNKhPm3yh9",
+      "cUPqqgXHoXHdSv57FzScE8dpwP1kvghho2avAz2MCYrQYfJzGcKb",
+      "cVBzZgVsA8KBo6vXefHxJrSZX2CgUnNbRXsqTjdxuoMXjc6NJu5H",
+      "cSymRkgxRKifDvTRcxB1outpgELPFBMS5ajxXi4QWWGbDPcFjMqQ"
+    ]
+  },
+  {
+    "address": "2N8cEXx9RRUjUeQVFigTQxoY7MSrBBrFPiF",
+    "walletType": "7-of-10",
+    "witness": [
+      "cSXiH4rKmSX58g7rcvrekvNBBqrLXfR7N6rj1KM5bvh7ojfsxMQe",
+      "cQNTZUhq8kZRqgnCRqADrftFzCsx7WaaLSQ1vQENeiQdRJA63xpD",
+      "cRfjomxkTdVNayto2JzWyXFXMCXKoPQYkuaaZLBXXu8qKJthM8kx",
+      "cTNhhXRyEGdoCmEb3NzJDqGojmfw3LtzHZHGjYQJnUFUQQnF85jy",
+      "cPEk3hBDKyL4Ha38xyPKmrYJtcRWLi6vL16jub4EjeZb52367GcY",
+      "cS3qYpUWBrFVWthbGpBXnp3UTg4H9sBXkZuzWCKpSqfXkC1P9LuM",
+      "cVWPPS47qCYH6Hein5G9Qng6CRgVuxQdgG6BDJ1mfCzAEzJ18k9a",
+      "cUUac4LxR8BqLsMkE8uyNVY4FHo4pTQstcVkX5UP4yDcTAvXMBNt",
+      "cNCgSjjoqR747fn6Y6gJzPYehJBDc9eTfHHbQVBfBs2aFDbHwj1s",
+      "cN5978CsWbvgVMBX5dDUKoF6zCTS2L7ujZtSo3L4gPhkxqZ7uY1A"
+    ]
+  }
+]
