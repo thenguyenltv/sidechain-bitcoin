@@ -10,23 +10,35 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-var latestBlock *types.Block
+const TARGET_ADDRESS = "0xaddress"
 
-func relayTxToSidechain(ethClient *ethclient.Client, tx *types.Transaction) error {
-	// TODO: Implement this function
-	return nil
-}
+func isTargetingSidechain(btcTx *wire.MsgTx) bool {
+	// Check each output of the transaction
+	for _, out := range btcTx.TxOut {
+		// Get the Bitcoin address of the output
+		_, addresses, _, err := txscript.ExtractPkScriptAddrs(out.PkScript, &chaincfg.TestNet3Params)
+		if err != nil {
+			log.Fatalf("Failed to extract addresses from transaction output: %v", err)
+		}
 
-func convertToEthTransaction(btcTx *wire.MsgTx) *types.Transaction {
-	// TODO: Implement conversion from *wire.MsgTx to *types.Transaction
-	return nil
+		// Check if any of the addresses are in the address map
+		for _, addr := range addresses {
+			if addr.EncodeAddress() == TARGET_ADDRESS {
+				// This transaction is targeting the side chain
+				return true
+			}
+		}
+	}
+
+	// This transaction is not targeting the side chain
+	return false
 }
 
 func main() {
@@ -43,15 +55,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Connect to Ethereum sidechain
-	ethClient, err := ethclient.Dial("ws://127.0.0.1:8545")
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	var lastBlockHash *chainhash.Hash
 	// Poll for new Bitcoin blocks every 10 seconds
 	go func() {
-		var lastBlockHash *chainhash.Hash
 		for {
 			blockHash, err := btcClient.GetBestBlockHash()
 			if err != nil {
@@ -61,29 +67,26 @@ func main() {
 			if lastBlockHash == nil || *blockHash != *lastBlockHash {
 				fmt.Printf("New Bitcoin block: %s\n", blockHash)
 
-				block, err := btcClient.GetBlock(blockHash)
-				if err != nil {
-					log.Fatalf("Failed to get block: %v", err)
-				}
-
-				for _, tx := range block.Transactions {
-					ethTx := convertToEthTransaction(tx)
-					err := relayTxToSidechain(ethClient, ethTx)
-					if err != nil {
-						log.Fatalf("Failed to relay transaction to sidechain: %v", err)
-					}
-				}
-
+				// block, err := btcClient.GetBlock(blockHash)
+				// if err != nil {
+				// 	log.Fatalf("Failed to get block: %v", err)
+				// }
+				// for _, tx := range block.Transactions {
+				// 	if isTargetingSidechain(tx) {
+				// 		continue
+				// 	}
+				// }
 				lastBlockHash = blockHash
 			}
-
 			time.Sleep(10 * time.Second)
 		}
 	}()
 
 	// Expose a RESTful API
 	http.HandleFunc("/latest-block", func(w http.ResponseWriter, r *http.Request) {
-		blockJson, err := json.Marshal(latestBlock)
+
+		// Marshal the block to JSON
+		blockJson, err := json.Marshal(lastBlockHash)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
