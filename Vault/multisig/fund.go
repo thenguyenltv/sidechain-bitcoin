@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 )
 
-func Fund(wifStrs []string, m int, uxto string, sentAddr string, recvAddr string) {
+func Fund(wifStrs []string, m int, amount int64, uxto string, recvAddr string) {
 	pubKeys := make([]*PublicKey, len(wifStrs))
 	for i := 0; i < len(wifStrs); i++ {
 		wif, err := btcutil.DecodeWIF(wifStrs[i])
@@ -22,7 +22,7 @@ func Fund(wifStrs []string, m int, uxto string, sentAddr string, recvAddr string
 	redeemScript, addr, _ := BuildMultiSigP2SHAddr(pubKeys, m)
 	fmt.Println(addr)
 	
-	signedTx, hexSignedTx, _ := SpendMultiSig(wifStrs[:m], redeemScript, uxto, sentAddr, recvAddr) //"52f79863ae6746a0fb8e7cdf2d847790dd805370c011a9c0cda7562f65a198f8", " mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB")
+	signedTx, hexSignedTx, _ := SpendMultiSig(wifStrs[:m], redeemScript, amount, uxto, recvAddr) //"52f79863ae6746a0fb8e7cdf2d847790dd805370c011a9c0cda7562f65a198f8", " mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB")
 
 	fmt.Println(hexSignedTx)
 	broadcastTx(signedTx)

@@ -22,3 +22,32 @@ func NewPublicKey(privKey *PrivateKey) *PublicKey {
 func NewWIF(privKey *PrivateKey) (*WIF, error) {
 	return btcutil.NewWIF(privKey, &chaincfg.TestNet3Params, true)
 }
+
+
+// create private keys, public keys, wifs
+func CreateKeys(n int) ([]*PrivateKey, []*PublicKey, []*WIF) {
+	privKeys := make([]*PrivateKey, n)
+	for i := 0; i < n; i++ {
+		privKey, err := NewPrivateKey()
+
+		if err != nil {
+			panic(err)
+		}
+		privKeys[i] = privKey
+	}
+
+	pubKeys := make([]*PublicKey, n)
+	for i := 0; i < n; i++ {
+		pubKeys[i] = NewPublicKey(privKeys[i])
+	}
+
+	wifs := make([]*WIF, n)
+	for i := 0; i < n; i++ {
+		wif, err := NewWIF(privKeys[i])
+		if err != nil {
+			panic(err)
+		}
+		wifs[i] = wif
+	}
+	return privKeys, pubKeys, wifs
+}

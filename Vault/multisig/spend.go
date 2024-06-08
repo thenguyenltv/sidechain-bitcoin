@@ -13,7 +13,7 @@ import (
 )
 
 
-func SpendMultiSig(wifStrs []string, redeemScript []byte, uxto string, sentAddr string, recvAddr string) ([]byte, string, error) {
+func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, uxto string, recvAddr string) ([]byte, string, error) {
 	privKeys := make([]*PrivateKey, len(wifStrs))
 
 	for i, wifStr := range wifStrs {
@@ -33,7 +33,7 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, uxto string, sentAddr 
 	}
 
 	// and add the index of the UTXO
-	index := utils.ParseTransaction(uxto, sentAddr)
+	index := utils.ParseTransaction(uxto)
 	outPoint := wire.NewOutPoint(utxoHash, uint32(index))
 
 	txIn := wire.NewTxIn(outPoint, nil, nil)
@@ -51,7 +51,7 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, uxto string, sentAddr 
 	}
 
 	// adding the destination address and the amount to the transaction
-	redeemTxOut := wire.NewTxOut(1, destinationAddrByte)
+	redeemTxOut := wire.NewTxOut(amount, destinationAddrByte)
 	redeemTx.AddTxOut(redeemTxOut)
 
 	// signing the tx
