@@ -72,7 +72,7 @@ func convertToEthTransaction(btcTx *wire.MsgTx, ethClient *ethclient.Client) (*t
 func relayTxToSidechain(ethClient *ethclient.Client, tx *types.Transaction) error {
 	// Create a new signer to sign the transaction
 	// This example assumes you have the private key available to sign the transaction
-	privateKey, err := crypto.HexToECDSA("6f41a8e821ef879941952772d82a9b0cf91dbc93920ff7d5e730fb24c5c538b6")
+	privateKey, err := crypto.HexToECDSA("d353c36fa1e54cc443fdd4a55230b625886fc86c9d6153c7f0aed8c791a8e911")
 	if err != nil {
 		return fmt.Errorf("failed to load private key: %v", err)
 	}
