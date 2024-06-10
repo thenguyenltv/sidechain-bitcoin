@@ -85,7 +85,16 @@ func main() {
 	// Expose a RESTful API
 	http.HandleFunc("/latest-block", func(w http.ResponseWriter, r *http.Request) {
 
-		// Marshal the block to JSON
+		// Marshal the block to JSON: {"hash": "0000000000000000000..."}
+		if lastBlockHash == nil {
+			// gán giá trị "random hash" cho lastBlockHash
+			hash, err := chainhash.NewHashFromStr("0000000000000000000000000000000000000000000000000000000000000000")
+			if err != nil {
+				log.Fatal(err)
+			}
+			lastBlockHash = hash
+		}
+		// blockJson, err := json.Marshal(map[string]string{"hash": lastBlockHash.String()})
 		blockJson, err := json.Marshal(lastBlockHash)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
