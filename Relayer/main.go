@@ -20,24 +20,18 @@ import (
 const TARGET_ADDRESS = "0xaddress"
 
 func isTargetingSidechain(btcTx *wire.MsgTx) bool {
-	// Check each output of the transaction
 	for _, out := range btcTx.TxOut {
-		// Get the Bitcoin address of the output
 		_, addresses, _, err := txscript.ExtractPkScriptAddrs(out.PkScript, &chaincfg.TestNet3Params)
 		if err != nil {
 			log.Fatalf("Failed to extract addresses from transaction output: %v", err)
 		}
 
-		// Check if any of the addresses are in the address map
 		for _, addr := range addresses {
 			if addr.EncodeAddress() == TARGET_ADDRESS {
-				// This transaction is targeting the side chain
 				return true
 			}
 		}
 	}
-
-	// This transaction is not targeting the side chain
 	return false
 }
 
@@ -56,6 +50,8 @@ func main() {
 	}
 
 	var lastBlockHash *chainhash.Hash
+	//height of the last block
+	var lastBlockHeight int64
 	// Poll for new Bitcoin blocks every 10 seconds
 	go func() {
 		for {
@@ -78,24 +74,77 @@ func main() {
 				// }
 				lastBlockHash = blockHash
 			}
+
+			// Get the height of the last block
+			block, err := btcClient.GetBlockVerboseTx(lastBlockHash)
+			if err != nil {
+				log.Fatal(err)
+			}
+			lastBlockHeight = block.Height
+
 			time.Sleep(10 * time.Second)
 		}
 	}()
 
 	// Expose a RESTful API
+	// API: /latest-block
+	// Usage: http://localhost:8080/latest-block
 	http.HandleFunc("/latest-block", func(w http.ResponseWriter, r *http.Request) {
-
-		// Marshal the block to JSON: {"hash": "0000000000000000000..."}
 		if lastBlockHash == nil {
-			// gán giá trị "random hash" cho lastBlockHash
-			hash, err := chainhash.NewHashFromStr("0000000000000000000000000000000000000000000000000000000000000000")
-			if err != nil {
-				log.Fatal(err)
-			}
-			lastBlockHash = hash
+			http.Error(w, "No block available", http.StatusNotFound)
+			return
 		}
-		// blockJson, err := json.Marshal(map[string]string{"hash": lastBlockHash.String()})
-		blockJson, err := json.Marshal(lastBlockHash)
+		blockData := map[string]interface{}{
+			"hash":   lastBlockHash.String(),
+			"height": lastBlockHeight,
+		}
+		blockJson, err := json.Marshal(blockData)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(blockJson)
+	})
+
+	// Create a struct to hold the information we want to display
+	type BlockInfo struct {
+		BlockHash         string   `json:"block_hash"`
+		MerkleRoot        string   `json:"merkle_root"`
+		TransactionHashes []string `json:"transaction_hashes"`
+	}
+
+	// API: /get-block/:hash
+	// Usage: http://localhost:8080/get-block/00000000dd38e6eac1b35139b7f14aff86983cd67da721453d64dacb7ca42157
+	http.HandleFunc("/get-block/", func(w http.ResponseWriter, r *http.Request) {
+		hash := r.URL.Path[len("/get-block/"):]
+
+		blockHash, err := chainhash.NewHashFromStr(hash)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		block, err := btcClient.GetBlock(blockHash)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Get the block hash, Merkle root, and transaction hashes
+		blockInfo := BlockInfo{
+			BlockHash:  blockHash.String(),
+			MerkleRoot: block.Header.MerkleRoot.String(),
+		}
+
+		// Iterate over the transactions in the block to get their hashes
+		for _, tx := range block.Transactions {
+			blockInfo.TransactionHashes = append(blockInfo.TransactionHashes, tx.TxHash().String())
+		}
+
+		// Marshal the blockInfo struct to JSON
+		blockJson, err := json.Marshal(blockInfo)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
