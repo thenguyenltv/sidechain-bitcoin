@@ -15,7 +15,7 @@ body {
 .header {
   padding: 16px 32px;
   backdrop-filter: blur(12px);
-  z-index: 11111;
+  z-index: 31;
 
   .logo {
     width: 175px;
@@ -86,7 +86,7 @@ body {
     );
     box-sizing: border-box;
     flex-shrink: 0;
-    z-index: 1100;
+    z-index: 30;
     min-height: 40px;
     background-color: transparent;
     color: rgb(255, 255, 255);
