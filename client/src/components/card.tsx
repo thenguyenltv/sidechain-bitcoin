@@ -7,6 +7,8 @@ import {
 
 import info from "@/data/info";
 import coins from "@/data/coin";
+import React from "react";
+import { toast } from "react-toastify";
 
 import Web3 from "web3";
 
@@ -101,6 +103,8 @@ export default function card() {
     if (address) {
       if (from.currency && to.currency && amount > 0) {
         setOpen(true);
+      } else {
+        toast.error("Please fill out all fields!");
       }
     } else {
       if (window.ethereum) {
@@ -115,6 +119,7 @@ export default function card() {
           console.log("Logged in with account:", userAccount);
           setLogin(true);
           setAddress(userAccount);
+          toast.success("Connected wallet successfully!");
         } catch (error) {
           console.error(
             "User denied account access or an error occurred:",

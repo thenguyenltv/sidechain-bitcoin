@@ -4,6 +4,8 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import { useGlobalState } from "@/context/GlobalStateContext";
 import Web3 from "web3";
+import React from "react";
+import { toast } from "react-toastify";
 
 export default function Header() {
   const { typeMenu, setTypeMenu, address, setAddress, login, setLogin } =
@@ -48,6 +50,7 @@ export default function Header() {
         console.log("Logged in with account:", userAccount);
         setLogin(true);
         setAddress(userAccount);
+        toast.success("Connected wallet successfully!");
       } catch (error) {
         console.error(
           "User denied account access or an error occurred:",
