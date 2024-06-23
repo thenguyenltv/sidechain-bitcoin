@@ -12,22 +12,26 @@ const web3 = new Web3(new Web3.providers.HttpProvider(`https://sepolia.infura.io
 const contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
 
 const account = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY);
-// console.log(account);
-
 async function createAndSendTransaction(data) {
-    // const privateKeyBuffer = Buffer.from(PRIVATE_KEY, 'hex');
     try {
         const encodedData = contract.methods.append(data).encodeABI();
+        const maxPriorityFeePerGas = web3.utils.toWei('1', 'gwei'); // Example priority fee
+        const estimatedGas = await web3.eth.estimateGas({
+            to: CONTRACT_ADDRESS,
+            data: encodedData
+        });
+        const baseFee = await web3.eth.getBlock('latest').then(block => block.baseFeePerGas);
+        const maxFeePerGas = web3.utils.toHex(BigInt(baseFee) + BigInt(maxPriorityFeePerGas));
+
         var rawTx = {
-            nonce: '0x' + (await web3.eth.getTransactionCount(account.address)).toString(16),
-            gasPrice: web3.utils.toHex(await web3.eth.getGasPrice()),
-            gasLimit: web3.utils.toHex(await web3.eth.estimateGas({
-                to: CONTRACT_ADDRESS,
-                data: encodedData
-            })),
+            nonce: '0x' + (await web3.eth.getTransactionCount(account.address, 'pending')).toString(16),
+            maxPriorityFeePerGas: maxPriorityFeePerGas,
+            maxFeePerGas: maxFeePerGas,
+            gasLimit: web3.utils.toHex(estimatedGas),
             to: CONTRACT_ADDRESS,
             value: '0x00',
             data: encodedData,
+            type: '0x2', // Specify EIP-1559 transaction type
             chainId: CHAIN_ID
         };
 
@@ -37,17 +41,10 @@ async function createAndSendTransaction(data) {
             web3.eth.sendSignedTransaction(signed.rawTransaction)
                 .on('receipt', console.log)
                 .on('error', console.error);
-            console.log("Raw Signed Transaction:", signed.rawTransaction);
         });
     } catch (error) {
         console.error('Error creating and sending transaction:', error);
     }
-
-    // const tx = new Tx(rawTx);
-    // tx.sign(privateKeyBuffer);
-
-    // const serializedTx = tx.serialize();
-    // return web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
 }
 
 async function fetchLatestBlock() {
@@ -67,7 +64,6 @@ async function fetchAndSend() {
         if (data.hash !== lastHash) {
             console.log("New block found!\nHash: ", data.hash, "\nHeight: ", data.height);
             const receipt = await createAndSendTransaction('0x' + data.hash);
-            console.log(receipt);
             lastHash = data.hash;
         }
     } catch (error) {

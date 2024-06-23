@@ -2,7 +2,7 @@ module.exports = {
     INFURA_PROJECT_ID: 'dec608097e254baeaa74abcc2356c604',
     ADDRESS_FROM: '0xAcAD66DB2bc974B86F3b7A6238da70Fb89267795',
     PRIVATE_KEY: '0x85171e109298b0b45b030b8e14b2a389516577ac9ca2d04e20b14c8b64d80a4f',
-    CONTRACT_ADDRESS: '0x470b43a617B36eDF967aaC9236566b064c0B4dFc',
+    CONTRACT_ADDRESS: '0x6ad59A940Cb810667146E712E8769aeB337C8689',
     CONTRACT_ABI: [
         {
             "inputs": [
@@ -25,7 +25,7 @@ module.exports = {
                     "type": "bytes[]"
                 }
             ],
-            "name": "initMMR",
+            "name": "appendList",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
@@ -39,19 +39,13 @@ module.exports = {
             "anonymous": false,
             "inputs": [
                 {
-                    "indexed": false,
-                    "internalType": "address",
-                    "name": "receiver",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "money",
-                    "type": "uint256"
+                    "indexed": true,
+                    "internalType": "bytes32",
+                    "name": "blockHash",
+                    "type": "bytes32"
                 }
             ],
-            "name": "Master_InitMMR",
+            "name": "NewBlockAppended",
             "type": "event"
         },
         {
@@ -633,6 +627,6 @@ module.exports = {
             "stateMutability": "view",
             "type": "function"
         }
-    ], // ABI của hợp đồng
-    CHAIN_ID: '0xaa36a7'
+    ],
+    CHAIN_ID: '0xaa36a7' // sepolia
 };
