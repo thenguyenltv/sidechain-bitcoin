@@ -73,7 +73,7 @@ func main() {
 	// Get the height of the last block
 	var lastBlockHeight int64
 	// Get the Block including TARGET_ADDRESS
-	var blockTarget *wire.MsgBlock = nil
+	var blockTargets []*wire.MsgBlock = make([]*wire.MsgBlock, 0)
 	// Poll for new Bitcoin blocks every 10 seconds
 	// go func() {
 	// 	for {
@@ -141,14 +141,14 @@ func main() {
 				haveTarget := false
 				for _, tx := range tmpBlock.Transactions {
 					if isTargetingSidechain(tx) {
-						blockTarget = tmpBlock
+						fmt.Println("Found target transaction in this block")
+						blockTargets = append(blockTargets, tmpBlock)
 						haveTarget = true
 						break
 					}
 				}
 				if !haveTarget {
 					fmt.Println("No target transaction in this block")
-					blockTarget = nil
 				}
 				lastBlockHash = blockHash
 			}
@@ -188,9 +188,10 @@ func main() {
 
 	// Create a struct to hold the information we want to display
 	type BlockInfo struct {
-		BlockHash         string   `json:"block_hash"`
-		MerkleRoot        string   `json:"merkle_root"`
-		TransactionHashes []string `json:"transaction_hashes"`
+		BlockHash         string
+		BlockHeight       int64
+		MerkleRoot        string
+		TransactionHashes []string
 	}
 
 	// API: /get-block/:hash
@@ -212,8 +213,9 @@ func main() {
 
 		// Get the block hash, Merkle root, and transaction hashes
 		blockInfo := BlockInfo{
-			BlockHash:  blockHash.String(),
-			MerkleRoot: block.Header.MerkleRoot.String(),
+			BlockHash:   blockHash.String(),
+			BlockHeight: lastBlockHeight,
+			MerkleRoot:  block.Header.MerkleRoot.String(),
 		}
 
 		// Iterate over the transactions in the block to get their hashes
@@ -235,14 +237,19 @@ func main() {
 	// API: /new-target-tnx
 	// Usage: http://localhost:8080/new-target-tnx
 	http.HandleFunc("/new-target-tnx", func(w http.ResponseWriter, r *http.Request) {
-		if blockTarget == nil {
-			http.Error(w, "No block available", http.StatusNotFound)
+		if len(blockTargets) == 0 || *lastBlockHash != blockTargets[len(blockTargets)-1].BlockHash() {
+			http.Error(w, "No target block available", http.StatusNotFound)
 			return
 		}
+
+		// Get the latest block target
+		blockTarget := blockTargets[len(blockTargets)-1]
+
 		// Get the block hash, Merkle root, and transaction hashes
 		blockInfo := BlockInfo{
-			BlockHash:  lastBlockHash.String(),
-			MerkleRoot: blockTarget.Header.MerkleRoot.String(),
+			BlockHash:   lastBlockHash.String(),
+			BlockHeight: lastBlockHeight,
+			MerkleRoot:  blockTarget.Header.MerkleRoot.String(),
 		}
 
 		// Iterate over the transactions in the block to get their hashes
