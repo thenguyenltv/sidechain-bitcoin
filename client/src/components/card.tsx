@@ -11,6 +11,7 @@ import React from "react";
 import { toast } from "react-toastify";
 
 import Web3 from "web3";
+import erc20Abi from "@/data/erc20Abi";
 
 import { useGlobalState } from "@/context/GlobalStateContext";
 import { useState, useEffect } from "react";
@@ -43,6 +44,9 @@ export default function card() {
     login,
     setLogin,
   } = useGlobalState();
+
+  const contractAddress = "0x182bEAdc2a1dafa95C35F17723B6E4032EA65C2C";
+
   function fromClick() {
     const coin = document.querySelector(".coin");
     coin?.classList.remove("hidden");
@@ -102,6 +106,7 @@ export default function card() {
   async function handleExchangeClick() {
     if (address) {
       if (from.currency && to.currency && amount > 0) {
+        handleExchange();
         setOpen(true);
       } else {
         toast.error("Please fill out all fields!");
@@ -110,7 +115,6 @@ export default function card() {
       if (window.ethereum) {
         try {
           const web3 = new Web3(window.ethereum);
-
           const accounts = await window.ethereum.request({
             method: "eth_requestAccounts",
           });
@@ -139,6 +143,34 @@ export default function card() {
       setAmount(Number(value));
     }
   };
+
+  function handleExchange() {
+    const web3 = new Web3(window.ethereum);
+    const tokenContract = new web3.eth.Contract(erc20Abi, address);
+
+    console.log("Token contract:", tokenContract.events.Transfer);
+
+    const subscribeToTransfer = async () => {
+      console.log("Subscribing to Transfer event...");
+      tokenContract.events.Transfer(
+        {
+          filter: { to: address },
+          fromBlock: "latest",
+        },
+        (error, event) => {
+          if (!error) {
+            console.log("Transfer event detected:", event);
+            toast.success("Balance updated!");
+            // Update balance here
+          } else {
+            console.error("Error on event listening:", error);
+          }
+        }
+      );
+    };
+
+    subscribeToTransfer();
+  }
 
   return (
     <>
