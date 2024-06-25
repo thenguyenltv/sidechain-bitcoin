@@ -1,9 +1,11 @@
 package multisig
 
 import (
+	"fmt"
+
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 func BuildMultiSigP2SHAddr(pubKeys []*PublicKey, m int) ([]byte, string, error) {
@@ -34,6 +36,15 @@ func BuildMultiSigP2SHAddr(pubKeys []*PublicKey, m int) ([]byte, string, error) 
 		return nil, "", err
 	}
 
+	_, err = txscript.DisasmString(redeemScript)
+	
+	if err != nil {
+		fmt.Println("error disassembling redeem script")
+	}
+	
+	//fmt.Println("Redeem Script:", disasm) 
+	//fmt.Println("Redeem Script byte:", redeemScript)
+	//fmt.Println("Redeem Script byte convert:", txscript.Assemble(disasm))
 	return redeemScript, addr.EncodeAddress(), nil
 
 }

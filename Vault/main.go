@@ -10,6 +10,9 @@ import (
 	"os"
 )
 
+//var user = "tb1p6vplkvdcp5s29lkycq4puglxgymysdjzf6e35p7l6qk3xgassfaqzajhtg" - priv: cVQYUN9oervZxVQKgKaseXhmzQUDUG4Pp723J1gfe8ESkgmLcq2i
+var vaultAddr = "2MvLZyMwcAju7snmtEHHUqVmzK2GmMwKzs1"
+var refundAddr = "2N25Jkj33suzMVwCH3Ykc2ZNDxnhi19aoT7"
 
 func help() {
     addressCmd := flag.NewFlagSet("address", flag.ExitOnError)
@@ -21,8 +24,10 @@ func help() {
     fundM := fundCmd.Int("m", 0, "Minimum keys for spending (required)")
 	fundAmount := fundCmd.Int64("amount", 0, "Amount to spend (required)")
     fundUtxo := fundCmd.String("utxo", "", "UTXO to spend (required)")
+	fundSentAddr := fundCmd.String("sent", "", "Sending address (required)")
     fundRecvAddr := fundCmd.String("recv", "", "Receiving address (required)")
-
+	fundChangeAddr := fundCmd.String("change", "", "Change address (required)")
+	fundOpReturnData := fundCmd.String("opreturn", "", "OpReturn data (optional)")
 
     // Usage Function
     flag.Usage = func() {
@@ -64,13 +69,13 @@ func help() {
 
 	case "fund":
 		fundCmd.Parse(os.Args[2:])
-		if *fundM == 0 || *fundAmount == 0 || *fundWif == "" || *fundUtxo == "" || *fundRecvAddr == "" {
+		if *fundM == 0 || *fundAmount == 0 || *fundWif == "" || *fundUtxo == "" || *fundSentAddr == "" || *fundRecvAddr == "" || *fundChangeAddr == "" || *fundOpReturnData == ""{
 			fundCmd.PrintDefaults()
 			return
 		}
 		// Convert WIFs to a slice of strings
 		wifStrs := strings.Split(*fundWif, ",")
-		multisig.Fund(wifStrs, *fundM, *fundAmount, *fundUtxo, *fundRecvAddr)
+		multisig.Fund(wifStrs, *fundM, *fundAmount, *fundUtxo, *fundSentAddr, *fundRecvAddr, *fundChangeAddr, *fundOpReturnData)
 
 	default:
 		flag.Usage()

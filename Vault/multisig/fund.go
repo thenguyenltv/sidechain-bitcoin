@@ -9,7 +9,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 )
 
-func Fund(wifStrs []string, m int, amount int64, uxto string, recvAddr string) {
+func Fund(wifStrs []string, m int, amount int64, utxo string, sentAddr string, recvAddr string, changeAddr string, opReturnData string) {
 	pubKeys := make([]*PublicKey, len(wifStrs))
 	for i := 0; i < len(wifStrs); i++ {
 		wif, err := btcutil.DecodeWIF(wifStrs[i])
@@ -19,18 +19,17 @@ func Fund(wifStrs []string, m int, amount int64, uxto string, recvAddr string) {
 		pubKeys[i] = wif.PrivKey.PubKey()
 	}
 
-	redeemScript, addr, _ := BuildMultiSigP2SHAddr(pubKeys, m)
-	fmt.Println(addr)
-	
-	signedTx, hexSignedTx, _ := SpendMultiSig(wifStrs[:m], redeemScript, amount, uxto, recvAddr) //"52f79863ae6746a0fb8e7cdf2d847790dd805370c011a9c0cda7562f65a198f8", " mv4rnyY3Su5gjcDNzbMLKBQkBicCtHUtFB")
+	redeemScript, _, _ := BuildMultiSigP2SHAddr(pubKeys, m)
+	//fmt.Println(addr)
 
-	fmt.Println(hexSignedTx)
+	signedTx, _, _ := SpendMultiSig(wifStrs[:m], redeemScript, amount, utxo, sentAddr, recvAddr, changeAddr, opReturnData)
+
 	broadcastTx(signedTx)
 
 }
 
 func broadcastTx(signedTx []byte) {
-	url := "https://api.blockcypher.com/v1/btc/test3/txs/push"
+	url := "http://api.blockcypher.com/v1/btc/test3/txs/push"
 
 	// Prepare the JSON payload
 	data := map[string]string{"tx": fmt.Sprintf("%x", signedTx)} // Convert to hex string

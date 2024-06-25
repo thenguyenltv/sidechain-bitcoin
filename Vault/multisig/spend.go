@@ -5,15 +5,15 @@ import (
 	"encoding/hex"
 
 	"go-multisig/utils"
+
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 )
 
-
-func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, uxto string, recvAddr string) ([]byte, string, error) {
+func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, utxo string, sentAddr string, recvAddr string, changeAddr string, opReturnData string) ([]byte, string, error) {
 	privKeys := make([]*PrivateKey, len(wifStrs))
 
 	for i, wifStr := range wifStrs {
@@ -27,13 +27,14 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, uxto str
 	redeemTx := wire.NewMsgTx(wire.TxVersion)
 
 	// you should provide your UTXO hash
-	utxoHash, err := chainhash.NewHashFromStr(uxto)
+	utxoHash, err := chainhash.NewHashFromStr(utxo)
 	if err != nil {
 		return nil, "", nil
 	}
 
 	// and add the index of the UTXO
-	index := utils.ParseTransaction(uxto)
+	index, value := utils.ParseTransaction(utxo, sentAddr)
+	println("index", index)
 	outPoint := wire.NewOutPoint(utxoHash, uint32(index))
 
 	txIn := wire.NewTxIn(outPoint, nil, nil)
@@ -45,6 +46,7 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, uxto str
 	if err != nil {
 		return nil, "", err
 	}
+
 	destinationAddrByte, err := txscript.PayToAddrScript(decodedAddr)
 	if err != nil {
 		return nil, "", err
@@ -53,6 +55,28 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, uxto str
 	// adding the destination address and the amount to the transaction
 	redeemTxOut := wire.NewTxOut(amount, destinationAddrByte)
 	redeemTx.AddTxOut(redeemTxOut)
+
+	myDecodedAddr, err := btcutil.DecodeAddress(changeAddr, &chaincfg.TestNet3Params)
+	if err != nil {
+		return nil, "", err
+	}
+
+	myDestinationAddrByte, err := txscript.PayToAddrScript(myDecodedAddr)
+	if err != nil {
+		return nil, "", err
+	}
+
+	//-- OP_RETURN--
+	opReturnScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData([]byte(opReturnData)).Script()
+	if err != nil {
+		return nil, "", err
+	}
+	opReturnTxOut := wire.NewTxOut(0, opReturnScript)
+	redeemTx.AddTxOut(opReturnTxOut)
+
+	var fee int64 = 10000
+	myRedeemTxOut := wire.NewTxOut(value-amount-fee-int64(len(opReturnScript)), myDestinationAddrByte)
+	redeemTx.AddTxOut(myRedeemTxOut)
 
 	// signing the tx
 	sigs := make([][]byte, len(privKeys))

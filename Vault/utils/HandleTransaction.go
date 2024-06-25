@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+
+
 type TransactionOutput struct {
 	Value_    int64    `json:"value"`
 	Script_   string   `json:"script"`
@@ -26,7 +28,7 @@ type TransactionInput struct {
 	Witness_      []string `json:"witness"`
 }
 type Transaction struct {
-	Address_      string            `json:"addresses"`
+	Address_      string              `json:"addresses"`
 	Block_hash_   string              `json:"block_hash"`
 	Block_height_ int                 `json:"block_height"`
 	Block_index_  int                 `json:"block_index"`
@@ -59,22 +61,24 @@ func GetJson(url string, target interface{}) error {
 		return fmt.Errorf("error decoding JSON response: %v", err)
 	}
 	defer resp.Body.Close()
-
+	//fmt.Println(json.NewDecoder(resp.Body).Decode(target))
 	return json.NewDecoder(resp.Body).Decode(target)
 }
 
-func ParseTransaction(utxo string) int {
+func ParseTransaction(utxo string, sentAddr string) (int, int64) {
 	url := "http://api.blockcypher.com/v1/btc/test3/txs/" + utxo
 
 	tx := new(Transaction)
 	GetJson(url, tx)
-	for i, input := range tx.Output_ {
-		if input.Address_[0] == tx.Address_ {
-			return i
+	
+	for i, output := range tx.Output_ {
+		fmt.Println(output.Address_[0])
+		if output.Address_[0] == sentAddr {
+			return i, output.Value_
 		}
 	}
 
-	return -1
+	return -1, 0
 }
 
 
