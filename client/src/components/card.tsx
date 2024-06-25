@@ -45,7 +45,7 @@ export default function card() {
     setLogin,
   } = useGlobalState();
 
-  const contractAddress = "0x182bEAdc2a1dafa95C35F17723B6E4032EA65C2C";
+  const tokenAddress = "0x182bEAdc2a1dafa95C35F17723B6E4032EA65C2C";
 
   function fromClick() {
     const coin = document.querySelector(".coin");
@@ -145,28 +145,27 @@ export default function card() {
   };
 
   function handleExchange() {
-    const web3 = new Web3(window.ethereum);
-    const tokenContract = new web3.eth.Contract(erc20Abi, address);
+    // infura_id : dec608097e254baeaa74abcc2356c604
+    var provider = new Web3.providers.WebsocketProvider("wss://sepolia.infura.io/ws/v3/dec608097e254baeaa74abcc2356c604");
+    var web3_infura = new Web3(provider);
+    var tokenContract = new web3_infura.eth.Contract(erc20Abi, tokenAddress);
 
-    console.log("Token contract:", tokenContract.events.Transfer);
+    // console.log("Token contract:", tokenContract);
 
+    // work với block được chỉ định: fromBlock: 6181923
+    // Error với latest block: listen full event, not filter 
     const subscribeToTransfer = async () => {
-      console.log("Subscribing to Transfer event...");
-      tokenContract.events.Transfer(
-        {
-          filter: { to: address },
-          fromBlock: "latest",
-        },
-        (error, event) => {
-          if (!error) {
-            console.log("Transfer event detected:", event);
-            toast.success("Balance updated!");
-            // Update balance here
-          } else {
-            console.error("Error on event listening:", error);
-          }
-        }
-      );
+      console.log("Subscribing to Transfer event to...", address);
+      tokenContract.events.Transfer({
+        filter: {to: address}, 
+        fromBlock: 'latest'
+      })
+      .on('data', (event) => {
+        console.log("To:", event.returnValues.to)
+        console.log("Address connected:", address)
+        console.log('Transfer event detected:', event);
+        toast.success("Balance updated!");
+      });
     };
 
     subscribeToTransfer();
@@ -175,9 +174,8 @@ export default function card() {
   return (
     <>
       <div
-        className={`widget-wrap exchange card flex flex-col ${
-          typeMenu !== "exchange" ? "hidden" : ""
-        }`}
+        className={`widget-wrap exchange card flex flex-col ${typeMenu !== "exchange" ? "hidden" : ""
+          }`}
       >
         <div className="header flex justify-between w-full">
           <h2>Exchange</h2>
@@ -248,9 +246,8 @@ export default function card() {
       </div>
 
       <div
-        className={`widget-wrap about card flex flex-col ${
-          typeMenu !== "about" ? "hidden" : ""
-        }`}
+        className={`widget-wrap about card flex flex-col ${typeMenu !== "about" ? "hidden" : ""
+          }`}
       >
         <div className="header flex justify-between w-full">
           <h2>About</h2>
