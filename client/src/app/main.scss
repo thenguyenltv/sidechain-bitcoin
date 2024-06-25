@@ -17,13 +17,17 @@ body {
   backdrop-filter: blur(12px);
   z-index: 31;
 
-  .logo {
-    width: 175px;
+  .wrap-logo {
+    width: 380px;
     height: 32px;
+    .logo {
+      width: 175px;
+      height: 32px;
 
-    img {
-      width: 100%;
-      object-fit: cover;
+      img {
+        width: 175px;
+        object-fit: cover;
+      }
     }
   }
 
@@ -46,7 +50,7 @@ body {
     display: flex;
     gap: 16px;
     align-items: center;
-    width: 200px;
+    width: 380px;
     justify-content: right;
   }
 
@@ -362,7 +366,7 @@ body {
       opacity: 0.8;
     }
 
-    &.disabled{
+    &.disabled {
       opacity: 0.5;
       cursor: not-allowed;
       pointer-events: none;

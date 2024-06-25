@@ -16,6 +16,7 @@ export const GlobalStateProvider = ({ children }) => {
   const [typeMenu, setTypeMenu] = useState("exchange");
   const [address, setAddress] = useState("");
   const [login, setLogin] = useState(false);
+  const [login2, setLogin2] = useState(false);
 
 
   return (
@@ -35,6 +36,8 @@ export const GlobalStateProvider = ({ children }) => {
         setAddress,
         login,
         setLogin,
+        login2,
+        setLogin2,
       }}
     >
       {children}

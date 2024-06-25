@@ -4,12 +4,25 @@ import { faBars } from "@fortawesome/free-solid-svg-icons";
 import { useState, useEffect } from "react";
 import { useGlobalState } from "@/context/GlobalStateContext";
 import Web3 from "web3";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 import React from "react";
 import { toast } from "react-toastify";
 
 export default function Header() {
-  const { typeMenu, setTypeMenu, address, setAddress, login, setLogin } =
-    useGlobalState();
+  const {
+    typeMenu,
+    setTypeMenu,
+    address,
+    setAddress,
+    login,
+    setLogin,
+    wallet1,
+    setWallet1,
+    wallet2,
+    setWallet2,
+    login2,
+    setLogin2,
+  } = useGlobalState();
 
   useEffect(() => {
     const buttonType1 = document.querySelectorAll(".button-type1");
@@ -49,7 +62,7 @@ export default function Header() {
         const userAccount = accounts[0];
         console.log("Logged in with account:", userAccount);
         setLogin(true);
-        setAddress(userAccount);
+        setWallet1(userAccount);
         toast.success("Connected wallet successfully!");
       } catch (error) {
         console.error(
@@ -64,9 +77,40 @@ export default function Header() {
     }
   }
 
+  async function handleLogin2() {
+    if (okxwallet) {
+      try {
+        // Yêu cầu kết nối tài khoản
+        const accounts = await okxwallet.request({
+          method: "eth_requestAccounts",
+        });
+        const account = accounts[0];
+        console.log("Logged in with account:", account);
+        setLogin2(true);
+        setWallet2(account);
+        toast.success("Connected wallet successfully!");
+      } catch (error) {
+        console.error(
+          "User denied account access or an error occurred:",
+          error
+        );
+      }
+    } else {
+      console.log(
+        "Please install OKX Wallet Extension or another Ethereum wallet provider."
+      );
+      // Hiển thị thông báo yêu cầu cài đặt ví
+    }
+  }
+
   async function handleLogout() {
     setLogin(false);
-    setAddress("");
+    setWallet1("");
+  }
+
+  async function handleLogout2() {
+    setLogin2(false);
+    setWallet2("");
   }
 
   function handleAccountsChanged(accounts) {
@@ -77,7 +121,7 @@ export default function Header() {
     } else {
       const userAccount = accounts[0];
       console.log("Account changed:", userAccount);
-      setAddress(userAccount);
+      setWallet1(userAccount);
     }
   }
 
@@ -87,17 +131,28 @@ export default function Header() {
   }
   return (
     <header className="fixed flex justify-between w-full header">
-      <a href="#" className="logo">
-        <img src={logo.src} alt="logo" />
-      </a>
+      <div className="wrap-logo">
+        <a href="#" className="logo">
+          <img src={logo.src} alt="logo" />
+        </a>
+      </div>
       <div className="tab">
         <button className="button-type1 active">Exchange</button>
         <button className="button-type1">About</button>
       </div>
       <div className="menu">
+        {login2 ? (
+          <button className="button-type2" onClick={() => handleLogout2()}>
+            {wallet2.slice(0, 6) + "..." + wallet2.slice(-4)}
+          </button>
+        ) : (
+          <button className="button-type2" onClick={() => handleLogin2()}>
+            Login
+          </button>
+        )}
         {login ? (
           <button className="button-type2" onClick={() => handleLogout()}>
-            {address.slice(0, 6) + "..." + address.slice(-4)}
+            {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}
           </button>
         ) : (
           <button className="button-type2" onClick={() => handleLogin()}>
