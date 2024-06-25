@@ -31,6 +31,7 @@ export default function card() {
   const [open, setOpen] = useState(false);
   const [openReceive, setOpenReceive] = useState(false);
   const [infoReceive, setInfoReceive] = useState({});
+  const [balance, setBalance] = useState(BigInt(0));
   const {
     wallet1,
     setWallet1,
@@ -151,6 +152,16 @@ export default function card() {
     );
     var web3_infura = new Web3(provider);
     var tokenContract = new web3_infura.eth.Contract(erc20Abi, tokenAddress);
+    console.log("Token contract:", tokenContract);
+
+    const handleBalance = async () => {
+      const balance = await tokenContract.methods.balanceOf(wallet1).call();
+      const formattedBalance = web3_infura.utils.fromWei(balance, "ether");
+      console.log("Balance of address", wallet1, "is", formattedBalance);
+      setBalance(formattedBalance);
+    };
+
+    handleBalance();
 
     const subscribeToTransfer = async () => {
       // tokenContract;
@@ -165,6 +176,7 @@ export default function card() {
           console.log("Address connected:", wallet1);
           console.log("Transfer event detected:", event);
           handleInfoReceive(event.returnValues.value, event.returnValues.from);
+          handleBalance();
           setOpenReceive(true);
           setOpen(false);
         });
@@ -470,14 +482,14 @@ export default function card() {
                           infoReceive.address?.slice(-6)}
                       </p>
                     </div>
-                    {/* <div className="lock flex justify-between pb-8 ">
+                    <div className="lock flex justify-between pb-8 ">
                       <p className="text-sm font-semibold leading-6 text-gray-600">
                         New balance
                       </p>
                       <p className="text-base	 font-semibold leading-6 text-gray-900">
-                        9 months
+                        {balance} DDDA
                       </p>
-                    </div> */}
+                    </div>
                   </div>
                 </DialogPanel>
               </TransitionChild>
