@@ -36,6 +36,8 @@ func getBlockHashes(btcClient *rpcclient.Client) ([]*chainhash.Hash, error) {
 	return blockHashes, nil
 }
 
+const CONDITION = false
+
 func main() {
 	// Connect to Bitcoin Core
 	connCfg := &rpcclient.ConnConfig{
@@ -50,17 +52,22 @@ func main() {
 		log.Fatal(err)
 	}
 
+	run := CONDITION
 	// Retrieve all block hashes
-	blockHashes, err := getBlockHashes(btcClient)
-	if err != nil {
-		log.Fatal(err)
-	}
-	blockHashesJson, err := json.Marshal(blockHashes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = os.WriteFile("blocks.json", blockHashesJson, 0644)
-	if err != nil {
-		log.Fatal(err)
+	if run {
+		blockHashes, err := getBlockHashes(btcClient)
+		if err != nil {
+			log.Fatal(err)
+		}
+		blockHashesJson, err := json.Marshal(blockHashes)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = os.WriteFile("blocks.json", blockHashesJson, 0644)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		log.Println("Run is set to false, skipping block retrieval")
 	}
 }
