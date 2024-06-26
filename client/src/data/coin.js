@@ -1,5 +1,5 @@
 import btc from "../../public/btc.png";
-import l2 from "../../public/l2.png";
+import l2 from "../../public/tri_net.png";
 
 const coins = [
   {
