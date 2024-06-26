@@ -108,7 +108,7 @@ export default function card() {
     if (wallet1) {
       if (from.currency && to.currency && amount > 0) {
         handleExchange();
-        setOpen(true);
+        // setOpen(true);
       } else {
         toast.error("Please fill out all fields!");
       }
@@ -145,7 +145,22 @@ export default function card() {
     }
   };
 
-  function handleExchange() {
+  async function handleExchange() {
+
+    // gọi api đến okx bitcoin testnet wallet
+    // gửi số tiền amount từ wallet2 đến wallet1
+    // thêm op_return với dữ liệu là wallet1
+
+    // Note: Use bitcoin mainnet --> comment to testnet
+    const result = await window.okxwallet.bitcoin.send({
+      from: wallet2,
+      to: 'bc1pawsaghd45u8sunvxyzedhk22m0ddy7qez66n720p8zkwpm82rv3ss62zwn',
+      value: amount,
+      memo: wallet1,
+      memoPos: 0,
+    });
+    // console.log("Transaction hash:", result);
+
     // infura_id : dec608097e254baeaa74abcc2356c604
     var provider = new Web3.providers.WebsocketProvider(
       "wss://sepolia.infura.io/ws/v3/dec608097e254baeaa74abcc2356c604"

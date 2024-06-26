@@ -77,13 +77,12 @@ export default function Header() {
     }
   }
 
+  // OKX Wallet: Settings --> Preferences --> Wallet connection --> Don't default to OKX Wallet
   async function handleLogin2() {
     if (okxwallet) {
       try {
         // Yêu cầu kết nối tài khoản
-        const accounts = await okxwallet.request({
-          method: "eth_requestAccounts",
-        });
+        const accounts = await okxwallet.bitcoin.requestAccounts();
         const account = accounts[0];
         console.log("Logged in with account:", account);
         setLogin2(true);
