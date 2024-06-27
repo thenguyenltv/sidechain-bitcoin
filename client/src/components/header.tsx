@@ -12,8 +12,6 @@ export default function Header() {
   const {
     typeMenu,
     setTypeMenu,
-    address,
-    setAddress,
     login,
     setLogin,
     wallet1,
