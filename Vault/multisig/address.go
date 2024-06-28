@@ -36,15 +36,23 @@ func BuildMultiSigP2SHAddr(pubKeys []*PublicKey, m int) ([]byte, string, error) 
 		return nil, "", err
 	}
 
-	_, err = txscript.DisasmString(redeemScript)
-	
-	if err != nil {
-		fmt.Println("error disassembling redeem script")
-	}
-	
-	//fmt.Println("Redeem Script:", disasm) 
-	//fmt.Println("Redeem Script byte:", redeemScript)
+	// disasm, err := txscript.DisasmString(redeemScript)
+
+	// if err != nil {
+	// 	fmt.Println("error disassembling redeem script")
+	// }
+
+	// fmt.Println("Redeem Script string: ", disasm)
+
+	fmt.Println("Redeem Script byte:", redeemScript)
+	// assem, err := assembleScript("OP_HASH160 OP_PUSHBYTES_20 0x21eb2398b15b72b1b863d22c6c5fb9c75e94e927 OP_EQUAL")
+	// if err != nil {
+	// 	fmt.Println("error assembling redeem script: ", err)
+	// }
+	// fmt.Println("Redeem Script byte convert:", assem)
+
 	//fmt.Println("Redeem Script byte convert:", txscript.Assemble(disasm))
 	return redeemScript, addr.EncodeAddress(), nil
 
 }
+

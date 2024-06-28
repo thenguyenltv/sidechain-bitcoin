@@ -6,7 +6,6 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 )
 
-
 type PublicKey = btcec.PublicKey
 type PrivateKey = btcec.PrivateKey
 type WIF = btcutil.WIF

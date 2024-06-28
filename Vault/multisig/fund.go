@@ -2,14 +2,19 @@ package multisig
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
+	"go-multisig/utils"
 	"github.com/btcsuite/btcd/btcutil"
 )
 
-func Fund(wifStrs []string, m int, amount int64, utxo string, sentAddr string, recvAddr string, changeAddr string, opReturnData string) {
+
+
+func Fund(wifStrs []string, m int, amount int64, sentAddr string, recvAddr string) {
 	pubKeys := make([]*PublicKey, len(wifStrs))
 	for i := 0; i < len(wifStrs); i++ {
 		wif, err := btcutil.DecodeWIF(wifStrs[i])
@@ -19,34 +24,26 @@ func Fund(wifStrs []string, m int, amount int64, utxo string, sentAddr string, r
 		pubKeys[i] = wif.PrivKey.PubKey()
 	}
 
-	redeemScript, _, _ := BuildMultiSigP2SHAddr(pubKeys, m)
-	//fmt.Println(addr)
 
-	signedTx, _, _ := SpendMultiSig(wifStrs[:m], redeemScript, amount, utxo, sentAddr, recvAddr, changeAddr, opReturnData)
+	disasmRedeemscript := utils.ReadNeededMultisigInfo(sentAddr)
+	redeemScript := utils.ParseDiasmRedeemScript(disasmRedeemscript)
+
+	signedTx, _, _ := SpendMultiSig(wifStrs[:m], redeemScript, amount, sentAddr, recvAddr)
 
 	broadcastTx(signedTx)
 
 }
 
 func broadcastTx(signedTx []byte) {
-	url := "http://api.blockcypher.com/v1/btc/test3/txs/push"
+	url := "https://mempool.space/testnet/api/tx"
 
-	// Prepare the JSON payload
-	data := map[string]string{"tx": fmt.Sprintf("%x", signedTx)} // Convert to hex string
-	jsonPayload, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("Error creating JSON payload:", err)
-		return
-	}
-
-	// Create the POST request
-	//fmt.Println(bytes.NewBuffer(jsonPayload))
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	// Prepare for raw data
+	rawTx := hex.EncodeToString(signedTx)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(rawTx)))
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
-	req.Header.Set("Content-Type", "application/json")
 
 	// Send the request
 	client := &http.Client{}
@@ -57,8 +54,15 @@ func broadcastTx(signedTx []byte) {
 	}
 	defer resp.Body.Close()
 
-	// Decode the response (optional, but useful for debugging)
+	// Decode the response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response:", err)
+		return
+	}
+
+	fmt.Println("Body: ", string(body))
 	var result map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&result)
-	fmt.Println(result)
+	fmt.Println("Result: ", result)
 }
