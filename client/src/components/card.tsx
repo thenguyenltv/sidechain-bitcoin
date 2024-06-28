@@ -29,6 +29,11 @@ export default function card() {
   const subImageSrc = "";
   const [amount, setAmount] = useState(0);
   const [open, setOpen] = useState(false);
+  const [openReceive, setOpenReceive] = useState(false);
+  const [infoReceive, setInfoReceive] = useState({});
+  const [openBurn, setOpenBurn] = useState(false);
+  const [burn, setBurn] = useState(BigInt(0));
+  const [balance, setBalance] = useState(BigInt(0));
   const {
     wallet1,
     setWallet1,
@@ -39,13 +44,11 @@ export default function card() {
     from,
     setFrom,
     typeMenu,
-    address,
-    setAddress,
     login,
     setLogin,
   } = useGlobalState();
 
-  const tokenAddress = "0x182bEAdc2a1dafa95C35F17723B6E4032EA65C2C";
+  const tokenAddress = "0x0ada5823e08d10eb96e0eedf4c5ce81411e6ab10";
 
   function fromClick() {
     const coin = document.querySelector(".coin");
@@ -104,10 +107,10 @@ export default function card() {
   }
 
   async function handleExchangeClick() {
-    if (address) {
+    if (wallet1) {
       if (from.currency && to.currency && amount > 0) {
         handleExchange();
-        setOpen(true);
+        // setOpen(true);
       } else {
         toast.error("Please fill out all fields!");
       }
@@ -122,7 +125,7 @@ export default function card() {
           const userAccount = accounts[0];
           console.log("Logged in with account:", userAccount);
           setLogin(true);
-          setAddress(userAccount);
+          setWallet1(userAccount);
           toast.success("Connected wallet successfully!");
         } catch (error) {
           console.error(
@@ -144,38 +147,104 @@ export default function card() {
     }
   };
 
-  function handleExchange() {
-    // infura_id : dec608097e254baeaa74abcc2356c604
-    var provider = new Web3.providers.WebsocketProvider("wss://sepolia.infura.io/ws/v3/dec608097e254baeaa74abcc2356c604");
-    var web3_infura = new Web3(provider);
-    var tokenContract = new web3_infura.eth.Contract(erc20Abi, tokenAddress);
+  async function handleExchange() {
+    // gọi api đến okx bitcoin testnet wallet
+    // gửi số tiền amount từ wallet2 đến wallet1
+    // thêm op_return với dữ liệu là wallet1
 
-    // console.log("Token contract:", tokenContract);
-
-    // work với block được chỉ định: fromBlock: 6181923
-    // Error với latest block: listen full event, not filter 
-    const subscribeToTransfer = async () => {
-      console.log("Subscribing to Transfer event to...", address);
-      tokenContract.events.Transfer({
-        filter: {to: address}, 
-        fromBlock: 'latest'
-      })
-      .on('data', (event) => {
-        console.log("To:", event.returnValues.to)
-        console.log("Address connected:", address)
-        console.log('Transfer event detected:', event);
-        toast.success("Balance updated!");
+    // Note: Use bitcoin mainnet --> comment to testnet
+    if (from.currency === "Bitcoin") {
+      const result = await window.okxwallet.bitcoin.send({
+        from: wallet2,
+        to: "bc1pawsaghd45u8sunvxyzedhk22m0ddy7qez66n720p8zkwpm82rv3ss62zwn",
+        value: amount,
+        memo: wallet1,
+        memoPos: 0,
       });
-    };
+      // console.log("Transaction hash:", result);
 
-    subscribeToTransfer();
+      // infura_id : dec608097e254baeaa74abcc2356c604
+      var provider = new Web3.providers.WebsocketProvider(
+        "wss://sepolia.infura.io/ws/v3/dec608097e254baeaa74abcc2356c604"
+      );
+      var web3_infura = new Web3(provider);
+      var tokenContract = new web3_infura.eth.Contract(erc20Abi, tokenAddress);
+      console.log("Token contract:", tokenContract);
+
+      const handleBalance = async () => {
+        const balance = await tokenContract.methods.balanceOf(wallet1).call();
+        const formattedBalance = web3_infura.utils.fromWei(balance, "ether");
+        console.log("Balance of address", wallet1, "is", formattedBalance);
+        setBalance(formattedBalance);
+      };
+
+      handleBalance();
+
+      const subscribeToTransfer = async () => {
+        // tokenContract;
+        console.log("Subscribing to Transfer event to...", wallet1);
+        tokenContract.events
+          .Transfer({
+            filter: { to: wallet1 },
+            fromBlock: "latest",
+          })
+          .on("data", (event) => {
+            console.log("To:", event.returnValues.to);
+            console.log("Address connected:", wallet1);
+            console.log("Transfer event detected:", event);
+            handleInfoReceive(
+              event.returnValues.value,
+              event.returnValues.from
+            );
+            handleBalance();
+            setOpenReceive(true);
+            setOpen(false);
+          });
+      };
+      subscribeToTransfer();
+    } else {
+      const web3 = new Web3(window.ethereum);
+      const tokenContract = new web3.eth.Contract(erc20Abi, tokenAddress);
+      const burnTokens = async (amount, btcRecv) => {
+        try {
+          const amountInWei = web3.utils.toWei(amount.toString(), "ether");
+
+          const transaction = await tokenContract.methods
+            .burn(amountInWei, btcRecv)
+            .send({ from: wallet1 });
+
+          console.log("Tokens burned:", amount);
+          console.log("BTC received:", btcRecv);
+          console.log("Transaction hash:", transaction);
+          setBurn(amount);
+          setOpenBurn(true);
+        } catch (error) {
+          console.error("Error occurred:", error);
+        }
+      };
+
+      burnTokens(amount, wallet2);
+    }
+  }
+
+  function handleCopy() {
+    navigator.clipboard.writeText(wallet1);
+    toast.success("Copied to clipboard!");
+  }
+
+  function handleInfoReceive(amount, address) {
+    setInfoReceive({
+      amount: amount,
+      address: address,
+    });
   }
 
   return (
     <>
       <div
-        className={`widget-wrap exchange card flex flex-col ${typeMenu !== "exchange" ? "hidden" : ""
-          }`}
+        className={`widget-wrap exchange card flex flex-col ${
+          typeMenu !== "exchange" ? "hidden" : ""
+        }`}
       >
         <div className="header flex justify-between w-full">
           <h2>Exchange</h2>
@@ -241,13 +310,14 @@ export default function card() {
         </div>
 
         <button className="button-type2 w-full " onClick={handleExchangeClick}>
-          {address ? "Exchange" : "Connect wallet"}
+          {wallet1 ? "Exchange" : "Connect wallet"}
         </button>
       </div>
 
       <div
-        className={`widget-wrap about card flex flex-col ${typeMenu !== "about" ? "hidden" : ""
-          }`}
+        className={`widget-wrap about card flex flex-col ${
+          typeMenu !== "about" ? "hidden" : ""
+        }`}
       >
         <div className="header flex justify-between w-full">
           <h2>About</h2>
@@ -366,17 +436,179 @@ export default function card() {
                     </div>
                   </div>
                   <div className="notify bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <p className="text-sm font-semibold leading-6 text-gray-900 mb-4">
+                      master wallet address
+                    </p>
+                    <div className="info-main-wallet flex justify-between	justify-items-center	items-center mb-4">
+                      <p className="text-xl leading-6 text-gray-900">
+                        {wallet1.slice(0, 10) + "..." + wallet1.slice(-6)}
+                      </p>
+                      <button
+                        className="text-xs leading-6 text-gray-900 button-type2"
+                        onClick={handleCopy}
+                      >
+                        Copy
+                      </button>
+                    </div>
                     <p className="text-xs font-semibold leading-6 text-red-600 mb-4">
                       Sent over {amount} BTC to your wallet to above address.
                     </p>
                     <p className="text-xs leading-6 text-gray-900">
                       Your Deposit and HODL Score will be linked to{" "}
-                      {address.slice(0, 6) + "..." + address.slice(-4)}.
+                      {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}.
                     </p>
                     <p className="text-xs leading-6 text-gray-900">
                       This address will be able to withdraw funds and extend
                       lock duration.
                     </p>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      <Transition show={openReceive}>
+        <Dialog className="relative z-50" onClose={setOpenReceive}>
+          <TransitionChild
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <TransitionChild
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <DialogPanel className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg modal-deposit">
+                  <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div className="sm:flex sm:items-start justify-center">
+                      <div className="mt-3 text-center sm:mt-0">
+                        <DialogTitle
+                          as="h3"
+                          className="text-xl font-bold leading-6 text-gray-900 text-center"
+                        >
+                          Received money successfully
+                        </DialogTitle>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="info bg-white px-4 pb-4 pt-8 sm:p-6 sm:pb-4">
+                    <div className="amount flex justify-between mb-3">
+                      <p className="text-sm font-semibold leading-6 text-gray-600 ">
+                        Amount
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        {infoReceive.amount} BTC
+                      </p>
+                    </div>
+                    <div className="fee flex justify-between mb-3">
+                      <p className="text-sm font-semibold leading-6 text-gray-600">
+                        From
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        {infoReceive.address?.slice(0, 10) +
+                          "..." +
+                          infoReceive.address?.slice(-6)}
+                      </p>
+                    </div>
+                    <div className="lock flex justify-between pb-8 ">
+                      <p className="text-sm font-semibold leading-6 text-gray-600">
+                        New balance
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        {balance} DDDA
+                      </p>
+                    </div>
+                  </div>
+                </DialogPanel>
+              </TransitionChild>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
+
+      <Transition show={openBurn}>
+        <Dialog className="relative z-50" onClose={setOpenBurn}>
+          <TransitionChild
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </TransitionChild>
+
+          <div className="fixed inset-0 z-50 w-screen overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <TransitionChild
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <DialogPanel className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg modal-deposit">
+                  <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                    <div className="sm:flex sm:items-start justify-center">
+                      <div className="mt-3 text-center sm:mt-0">
+                        <DialogTitle
+                          as="h3"
+                          className="text-xl font-bold leading-6 text-gray-900 text-center"
+                        >
+                          Burn successfully
+                        </DialogTitle>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="info bg-white px-4 pb-4 pt-8 sm:p-6 sm:pb-4">
+                    <div className="amount flex justify-between mb-3">
+                      <p className="text-sm font-semibold leading-6 text-gray-600 ">
+                        From
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        {wallet1?.slice(0, 10) + "..." + wallet1?.slice(-6)}
+                      </p>
+                    </div>
+                    <div className="amount flex justify-between mb-3">
+                      <p className="text-sm font-semibold leading-6 text-gray-600 ">
+                        Amount
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        {burn} BTC
+                      </p>
+                    </div>
+                    <div className="fee flex justify-between mb-3">
+                      <p className="text-sm font-semibold leading-6 text-gray-600">
+                        To
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        {wallet2?.slice(0, 10) + "..." + wallet2?.slice(-6)}
+                      </p>
+                    </div>
+                    <div className="lock flex justify-between pb-8 ">
+                      <p className="text-sm font-semibold leading-6 text-gray-600">
+                        Estimated completion time
+                      </p>
+                      <p className="text-base	 font-semibold leading-6 text-gray-900">
+                        1 Day
+                      </p>
+                    </div>
                   </div>
                 </DialogPanel>
               </TransitionChild>
