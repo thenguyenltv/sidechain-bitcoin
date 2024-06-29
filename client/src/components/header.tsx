@@ -69,6 +69,7 @@ export default function Header() {
         );
       }
     } else {
+      toast.error("Please install MetaMask or another Ethereum wallet provider.");
       console.log(
         "Please install MetaMask or another Ethereum wallet provider."
       );
@@ -94,6 +95,7 @@ export default function Header() {
         );
       }
     } else {
+      toast.error("Please install OKX Wallet Extension or another Ethereum wallet provider.");
       console.log(
         "Please install OKX Wallet Extension or another Ethereum wallet provider."
       );

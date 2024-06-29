@@ -111,7 +111,6 @@ export default function card() {
     if (wallet1) {
       if (from.currency && to.currency && amount > 0) {
         handleExchange();
-        setOpen(true);
       } else {
         toast.error("Please fill out all fields!");
       }
@@ -129,6 +128,7 @@ export default function card() {
           setWallet1(userAccount);
           toast.success("Connected wallet successfully!");
         } catch (error) {
+          toast.error('User denied account access or an error occurred:');
           console.error(
             "User denied account access or an error occurred:",
             error
@@ -166,6 +166,7 @@ export default function card() {
       // console.log("Transaction hash:", result);
 
       // infura_id : dec608097e254baeaa74abcc2356c604
+      setOpen(true);
       var provider = new Web3.providers.WebsocketProvider(
         "wss://sepolia.infura.io/ws/v3/dec608097e254baeaa74abcc2356c604"
       );
