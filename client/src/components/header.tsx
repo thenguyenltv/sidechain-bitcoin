@@ -80,8 +80,9 @@ export default function Header() {
     if (okxwallet) {
       try {
         // Yêu cầu kết nối tài khoản
-        const accounts = await okxwallet.bitcoin.requestAccounts();
-        const account = accounts[0];
+        // mainnet: const accounts = await okxwallet.bitcoin.requestAccounts();
+        const accounts = await okxwallet.bitcoinTestnet.connect();
+        const account = accounts.address;
         console.log("Logged in with account:", account);
         setLogin2(true);
         setWallet2(account);
@@ -140,20 +141,20 @@ export default function Header() {
       <div className="menu">
         {login2 ? (
           <button className="button-type2" onClick={() => handleLogout2()}>
-            {wallet2.slice(0, 6) + "..." + wallet2.slice(-4)}
+            {wallet2.slice(0, 4) + "..." + wallet2.slice(-4)}
           </button>
         ) : (
           <button className="button-type2" onClick={() => handleLogin2()}>
-            Login
+            Connect BTC
           </button>
         )}
         {login ? (
           <button className="button-type2" onClick={() => handleLogout()}>
-            {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}
+            {wallet1.slice(0, 4) + "..." + wallet1.slice(-4)}
           </button>
         ) : (
           <button className="button-type2" onClick={() => handleLogin()}>
-            Login
+            Connect EVM
           </button>
         )}
         <button className="menu-hamburger">

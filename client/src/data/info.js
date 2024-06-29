@@ -12,12 +12,12 @@ const info = [
   {
     id: 3,
     name: "Nguyễn Thế Anh",
-    mssv: "20120061",
+    mssv: "20120248",
   },
   {
     id: 4,
     name: "Trần Hải Đăng",
-    mssv: "20120063",
+    mssv: "20120264",
   },
 ];
 

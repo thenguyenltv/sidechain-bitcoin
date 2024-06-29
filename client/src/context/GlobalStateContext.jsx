@@ -22,6 +22,7 @@ export const GlobalStateProvider = ({ children }) => {
   return (
     <GlobalStateContext.Provider
       value={{
+        vault: "2MvLZyMwcAju7snmtEHHUqVmzK2GmMwKzs1",
         wallet1,
         setWallet1,
         wallet2,

@@ -35,6 +35,7 @@ export default function card() {
   const [burn, setBurn] = useState(BigInt(0));
   const [balance, setBalance] = useState(BigInt(0));
   const {
+    vault,
     wallet1,
     setWallet1,
     wallet2,
@@ -48,7 +49,7 @@ export default function card() {
     setLogin,
   } = useGlobalState();
 
-  const tokenAddress = "0x0ada5823e08d10eb96e0eedf4c5ce81411e6ab10";
+  const tokenAddress = "0xd4f6EbfF005cF0E697F1baF9A74c35F81c426Ac8";
 
   function fromClick() {
     const coin = document.querySelector(".coin");
@@ -110,12 +111,12 @@ export default function card() {
     if (wallet1) {
       if (from.currency && to.currency && amount > 0) {
         handleExchange();
-        // setOpen(true);
+        setOpen(true);
       } else {
         toast.error("Please fill out all fields!");
       }
     } else {
-      if (window.ethereum) {
+      if (window.ethereum.isMetaMask) {
         try {
           const web3 = new Web3(window.ethereum);
           const accounts = await window.ethereum.request({
@@ -154,13 +155,14 @@ export default function card() {
 
     // Note: Use bitcoin mainnet --> comment to testnet
     if (from.currency === "Bitcoin") {
-      const result = await window.okxwallet.bitcoin.send({
-        from: wallet2,
-        to: "bc1pawsaghd45u8sunvxyzedhk22m0ddy7qez66n720p8zkwpm82rv3ss62zwn",
-        value: amount,
-        memo: wallet1,
-        memoPos: 0,
-      });
+      // This API is not available in the testnet version
+      // const result = await window.okxwallet.bitcoin.send({
+      //   from: wallet2,
+      //   to: vault,
+      //   value: amount,
+      //   memo: wallet1,
+      //   memoPos: 0,
+      // });
       // console.log("Transaction hash:", result);
 
       // infura_id : dec608097e254baeaa74abcc2356c604
@@ -197,8 +199,9 @@ export default function card() {
               event.returnValues.from
             );
             handleBalance();
-            setOpenReceive(true);
             setOpen(false);
+            setOpenBurn(false);
+            setOpenReceive(true);
           });
       };
       subscribeToTransfer();
@@ -217,6 +220,8 @@ export default function card() {
           console.log("BTC received:", btcRecv);
           console.log("Transaction hash:", transaction);
           setBurn(amount);
+          setOpen(false);
+          setOpenReceive(false);
           setOpenBurn(true);
         } catch (error) {
           console.error("Error occurred:", error);
@@ -420,7 +425,7 @@ export default function card() {
                     </div>
                     <div className="fee flex justify-between mb-3">
                       <p className="text-sm font-semibold leading-6 text-gray-600">
-                        Fee
+                        Service fee
                       </p>
                       <p className="text-base	 font-semibold leading-6 text-gray-900">
                         -0.0001 BTC
@@ -428,20 +433,20 @@ export default function card() {
                     </div>
                     <div className="lock flex justify-between pb-8 border-b">
                       <p className="text-sm font-semibold leading-6 text-gray-600">
-                        Lock period
+                        Time to process
                       </p>
                       <p className="text-base	 font-semibold leading-6 text-gray-900">
-                        9 months
+                        Up to 1 hour
                       </p>
                     </div>
                   </div>
                   <div className="notify bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <p className="text-sm font-semibold leading-6 text-gray-900 mb-4">
-                      master wallet address
+                      Sidechain's vault address
                     </p>
                     <div className="info-main-wallet flex justify-between	justify-items-center	items-center mb-4">
                       <p className="text-xl leading-6 text-gray-900">
-                        {wallet1.slice(0, 10) + "..." + wallet1.slice(-6)}
+                        {vault.slice(0, 10) + "..." + vault.slice(-10)}
                       </p>
                       <button
                         className="text-xs leading-6 text-gray-900 button-type2"
@@ -454,12 +459,14 @@ export default function card() {
                       Sent over {amount} BTC to your wallet to above address.
                     </p>
                     <p className="text-xs leading-6 text-gray-900">
-                      Your Deposit and HODL Score will be linked to{" "}
-                      {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}.
+                      Your Deposit will be linked to{" "}
+                      {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}
                     </p>
                     <p className="text-xs leading-6 text-gray-900">
-                      This address will be able to withdraw funds and extend
-                      lock duration.
+                    Do not send less than the amount or your deposit will be rejected
+                    </p>
+                    <p className="text-xs leading-6 text-gray-900">
+                      If your transaction is not confirmed, please <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'blue' }}>contact</a> us.
                     </p>
                   </div>
                 </DialogPanel>
@@ -529,7 +536,7 @@ export default function card() {
                         New balance
                       </p>
                       <p className="text-base	 font-semibold leading-6 text-gray-900">
-                        {balance} DDDA
+                        {balance} pBTC
                       </p>
                     </div>
                   </div>
