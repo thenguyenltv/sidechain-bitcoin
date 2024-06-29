@@ -1,6 +1,7 @@
 module.exports = {
-    INFURA_ID: '',
-    PRIVATE_KEY: '0x85171e109298b0b45b030b8e14b2a389516577ac9ca2d04e20b14c8b64d80a4f',
+    INFURA_ID: 'dec608097e254baeaa74abcc2356c604',
+    PRIVATE_KEY_MMR: '0x85171e109298b0b45b030b8e14b2a389516577ac9ca2d04e20b14c8b64d80a4f',
+    PRIVATE_KEY_ERC: '0x1bbd7ab274242ba747c2a2b166ea932cac20f0e5a7f7baec35734223d0c02f51',
     
     SM_MMR_ADDRESS: '0x6ad59A940Cb810667146E712E8769aeB337C8689',
     MMR_ABI: [
@@ -632,7 +633,7 @@ module.exports = {
     SM_TX_ADDRESS: '0x',
     TX_ABI: [],
     
-    POJAK_ADDRESS: '0xA52586d909C68E01Af7efAc02B225587092747c2',
+    POJAK_ADDRESS: '0xd4f6EbfF005cF0E697F1baF9A74c35F81c426Ac8',
     POJAK_ABI: [
         {
             "inputs": [
@@ -718,12 +719,42 @@ module.exports = {
                     "internalType": "uint256",
                     "name": "value",
                     "type": "uint256"
+                },
+                {
+                    "internalType": "string",
+                    "name": "btcRecv",
+                    "type": "string"
                 }
             ],
             "name": "burn",
             "outputs": [],
             "stateMutability": "nonpayable",
             "type": "function"
+        },
+        {
+            "anonymous": false,
+            "inputs": [
+                {
+                    "indexed": true,
+                    "internalType": "address",
+                    "name": "account",
+                    "type": "address"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "string",
+                    "name": "btc",
+                    "type": "string"
+                },
+                {
+                    "indexed": false,
+                    "internalType": "uint256",
+                    "name": "amount",
+                    "type": "uint256"
+                }
+            ],
+            "name": "Burn",
+            "type": "event"
         },
         {
             "inputs": [

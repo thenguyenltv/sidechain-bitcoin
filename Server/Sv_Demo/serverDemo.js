@@ -2,15 +2,10 @@ const axios = require('axios');
 const {Web3} = require('web3'); // For web3(v4.x), need to declare with curly brackets.
 const Tx = require('ethereumjs-tx').Transaction;
 
-const SV_RELAYER = 'http://localhost:8080';
-const API_RELAYER = '/new-target-tnx';
-//'/new-target-tnx';
-//'/get-block/0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
-const testHashBlock = '0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
-
 const {
     INFURA_ID,
-    PRIVATE_KEY,
+    PRIVATE_KEY_MMR,
+    PRIVATE_KEY_ERC,
     SM_MMR_ADDRESS,
     MMR_ABI,
     SM_TX_ADDRESS,
@@ -20,14 +15,22 @@ const {
     CHAIN_ID
 } = require('./constant');
 
+const SV_RELAYER = 'http://localhost:8080';
+const API_RELAYER = '/new-target-tnx';
+//'/new-target-tnx';
+//'/get-block/0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
+const testHashBlock = '0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
+
+
 const web3 = new Web3(new Web3.providers.HttpProvider(`https://sepolia.infura.io/v3/${INFURA_ID}`));
 const sm_mmr = new web3.eth.Contract(MMR_ABI, SM_MMR_ADDRESS);
 // const sm_tx = new web3.eth.Contract(TX_ABI, SM_TX_ADDRESS);
 
 const sm_pojaktoken = new web3.eth.Contract(POJAK_ABI, POJAK_ADDRESS);
+const AMOUNT = 0.00001;
 
-const account = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY);
-web3.eth.accounts.wallet.add(account);
+const accountMMR = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY_MMR);
+const accountERC = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY_ERC);  
 const recvAddress = '0x7A16D9DFc229e67095b25783debdE9089E33b400';
 
 class TransferEvent {
@@ -172,7 +175,7 @@ async function verifiAll(blockInfo) {
         // 3. Get recv address from bitcoin transaction (Chưa làm)
 
         // 4. Release token to recv address
-        releaseToken(recvAddress, 8888);
+        releaseToken(recvAddress, AMOUNT);
 
         // 5. Lắng nghe event Transfer từ smartcontract POJAK
         sm_pojaktoken.events.Transfer({
@@ -208,7 +211,7 @@ console.log('Listening new transaction...');
 setInterval(async () => {
     try {
 
-        let isMMRValid, isTnsValid, isRecvValid, checkTokenReleased = true;
+        let isMMRValid = true , isTnsValid = true, isRecvValid = true, checkTokenReleased = true;
 
         // Fetch new transaction
         const blockInfo = await fetchNewTransaction();
@@ -223,13 +226,13 @@ setInterval(async () => {
         }
 
         // đợi khoảng 30s để chắc chắn rằng block đã được thêm vào MMR
-        await new Promise(resolve => setTimeout(resolve, 30000));
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Verifi MMR, Transaction and Release token
-        isMMRValid = await verifyMMR(blockInfo);
+        // isMMRValid = await verifyMMR(blockInfo);
         console.log('Check MMR:', isMMRValid);
 
-        isTnsValid = await verifyTransaction(blockInfo);
+        // isTnsValid = await verifyTransaction(blockInfo);
         console.log('Check Transaction:', isTnsValid);
 
         if (isMMRValid && isTnsValid && isRecvValid) {
@@ -237,9 +240,8 @@ setInterval(async () => {
         }
 
         // Release token to recv address if all verifications passed
-        checkTokenReleased =  await releaseToken(recvAddress, 8888);
+        checkTokenReleased =  await releaseToken(recvAddress, AMOUNT);
         console.log('Check release:', checkTokenReleased);
-
     } catch (error) {
         console.error('Error in verification process:', error);
     }
@@ -249,24 +251,25 @@ setInterval(async () => {
 //     function transfer(address recipient, uint256 amount) external returns (bool);
 async function releaseToken(toAddress, amount) {
     try {
-        const amountInWei = web3.utils.toHex(amount);
+        const amountInWei = web3.utils.toWei(amount.toString(), 'ether');
+        console.log('Amount in Wei:', amountInWei);
         const encodedData = sm_pojaktoken.methods.transfer(toAddress, amountInWei).encodeABI();
 
         const maxPriorityFeePerGas = web3.utils.toWei('1', 'gwei'); // Example priority fee
         const estimatedGas = await web3.eth.estimateGas({
-            from: account.address,
+            from: accountERC.address,
             to: POJAK_ADDRESS,
             data: encodedData
         });
-        const baseFee = await web3.eth.getBlock('latest').then(block => block.baseFeePerGas);
+        const baseFee = await web3.eth.getBlock('latest').then(block => block.baseFeePerGas * BigInt(150)/BigInt(100));
         const maxFeePerGas = web3.utils.toHex(BigInt(baseFee) + BigInt(maxPriorityFeePerGas));
 
         const rawTx = {
-            nonce: '0x' + (await web3.eth.getTransactionCount(account.address, 'pending')).toString(16),
+            nonce: '0x' + (await web3.eth.getTransactionCount(accountERC.address)).toString(16),
             maxPriorityFeePerGas: maxPriorityFeePerGas,
             maxFeePerGas: maxFeePerGas,
             gasLimit: web3.utils.toHex(estimatedGas),
-            from: account.address,
+            from: accountERC.address,
             to: POJAK_ADDRESS,
             value: '0x00',
             data: encodedData,
@@ -274,7 +277,9 @@ async function releaseToken(toAddress, amount) {
             chainId: CHAIN_ID
         };
 
-        const signedTx = await web3.eth.accounts.signTransaction(rawTx, account.privateKey);
+        console.log('--------Raw Tnx--------\n', rawTx);
+
+        const signedTx = await web3.eth.accounts.signTransaction(rawTx, accountERC.privateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
 
         return receipt.status;

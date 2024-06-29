@@ -15,7 +15,7 @@ const account = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY);
 async function createAndSendTransaction(data) {
     try {
         const encodedData = contract.methods.append(data).encodeABI();
-        const maxPriorityFeePerGas = web3.utils.toWei('1', 'gwei'); // Example priority fee
+        const maxPriorityFeePerGas = web3.utils.toWei('1', 'gwei');
         const estimatedGas = await web3.eth.estimateGas({
             to: CONTRACT_ADDRESS,
             data: encodedData
@@ -39,8 +39,8 @@ async function createAndSendTransaction(data) {
 
         account.signTransaction(rawTx).then(signed => {
             web3.eth.sendSignedTransaction(signed.rawTransaction)
-                .on('receipt', console.log)
-                .on('error', console.error);
+                .on('receipt', receipt => console.log(receipt.transactionHash))
+                .on('error', error => console.error("Transaction failed:", error.message));
         });
     } catch (error) {
         console.error('Error creating and sending transaction:', error);
