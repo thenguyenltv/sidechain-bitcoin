@@ -38,6 +38,7 @@ func getBlockHashes(btcClient *rpcclient.Client) ([]*chainhash.Hash, error) {
 
 const CONDITION = false
 
+// Get all block hashes and write them to a file
 func main() {
 	// Connect to Bitcoin Core
 	connCfg := &rpcclient.ConnConfig{

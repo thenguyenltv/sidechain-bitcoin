@@ -14,7 +14,6 @@ func main() {
 	// defer btcClient.Shutdown()
 
 	// Start block polling
-	// go pollForBlocks(btcClient)
 	go startBlockNotificationServer(btcClient)
 
 	// Set up RESTful API

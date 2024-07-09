@@ -25,45 +25,6 @@ func connectToBitcoinCore() *rpcclient.Client {
 	return btcClient
 }
 
-// func pollForBlocks(btcClient *rpcclient.Client) {
-// 	for {
-// 		blockHash, err := btcClient.GetBestBlockHash()
-// 		if err != nil {
-// 			log.Fatalf("Failed to get best block hash: %v", err)
-// 		}
-
-// 		if lastBlockHash == nil || *blockHash != *lastBlockHash {
-// 			fmt.Printf("New Bitcoin block: %s\n", blockHash)
-
-// 			tmpBlock, err := btcClient.GetBlock(blockHash)
-// 			if err != nil {
-// 				log.Fatalf("Failed to get block: %v", err)
-// 			}
-// 			haveTarget := false
-// 			for _, tx := range tmpBlock.Transactions {
-// 				if isTargetingSidechain(tx) {
-// 					fmt.Println("Found target transaction in this block")
-// 					blockTargets = append(blockTargets, tmpBlock)
-// 					haveTarget = true
-// 					break
-// 				}
-// 			}
-// 			if !haveTarget {
-// 				fmt.Println("No target transaction in this block")
-// 			}
-// 			lastBlockHash = blockHash
-// 		}
-
-// 		block, err := btcClient.GetBlockVerboseTx(lastBlockHash)
-// 		if err != nil {
-// 			log.Fatal(err)
-// 		}
-// 		lastBlockHeight = block.Height
-
-// 		time.Sleep(10 * time.Second)
-// 	}
-// }
-
 // Function to poll for block info based on block hash
 func getBlockInfo(btcClient *rpcclient.Client, blockHash *chainhash.Hash) (BlockInfo, error) {
 	block, err := btcClient.GetBlock(blockHash)

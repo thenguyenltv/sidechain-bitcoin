@@ -29,18 +29,7 @@ def get_unspent_txouts(address):
     response = requests.get(url)
     return response.json()
 
-# def create_txin(txid, output_index):
-#     return CMutableTxIn(COutPoint(lx(txid), output_index))
-
 def select_utxos(utxos, amount_to_send, transaction_fee):
-    """
-    Chọn vừa đủ UTXOs cho số tiền cần gửi và phí giao dịch.
-
-    :param utxos: Danh sách các UTXO có sẵn.
-    :param amount_to_send: Số tiền (satoshis) muốn gửi.
-    :param transaction_fee: Phí giao dịch (satoshis).
-    :return: Tuple gồm danh sách UTXOs đã chọn và số tiền thừa.
-    """
     # Sắp xếp UTXOs theo giá trị giảm dần
     sorted_utxos = sorted(utxos, key=lambda x: x['value'], reverse=True)
 
@@ -59,12 +48,6 @@ def select_utxos(utxos, amount_to_send, transaction_fee):
     return selected_utxos, refund_amount
 
 def create_txins(utxos):
-    """
-    Tạo một danh sách các transaction inputs từ danh sách UTXOs.
-
-    :param utxos: Danh sách các UTXO, mỗi UTXO là một từ điển có 'txid' và 'output_index'.
-    :return: Danh sách các đối tượng CMutableTxIn.
-    """
     txins = []
     for utxo in utxos:
         txid = utxo['txid']
