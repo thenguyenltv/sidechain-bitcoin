@@ -17,9 +17,7 @@ const {
 
 const SV_RELAYER = 'http://localhost:8080';
 const API_RELAYER = '/new-target-tnx';
-//'/new-target-tnx';
-//'/get-block/0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
-const testHashBlock = '0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
+// const testHashBlock = '0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
 
 
 const web3 = new Web3(new Web3.providers.HttpProvider(`https://sepolia.infura.io/v3/${INFURA_ID}`));
@@ -68,7 +66,6 @@ async function fetchNewTransaction() {
         if (hash === lastProcessedBlockHash) {
             return null;
         }
-        // console.log('Response:', response.data);
 
         // gán giá trị vào blockInfo
         let blockInfo = new BlockInfo(
@@ -78,13 +75,6 @@ async function fetchNewTransaction() {
             transactions
         );
 
-        // const blockInfo = {
-        //     blockHash: hash, // use <hash> if real block, use <testHashBlock> if test
-        //     blockHeight: height,
-        //     merkleRoot: merkleRoot,
-        //     transactionHashes: transactions
-        // };
-
         // Update the last processed block hash
         lastProcessedBlockHash = hash;
 
@@ -92,10 +82,10 @@ async function fetchNewTransaction() {
     } catch (error) {
         if (error.response && error.response.status === 404) {
             // No target block available
-            // console.error('No target block available');
+            console.error('No target block available');
         } else {
             // Handle error without printing
-            // console.error(error.message);
+            console.error(error.message);
         }
     }
 }
@@ -150,62 +140,14 @@ async function verifyMMR(blockInfo) {
 }
 
 // 3. Xác minh transaction thông qua SM_TNX_BTC
-
 async function verifyTransaction(blockInfo) {
-    return true;
-}
-
-
-let transferEvents = [];
-async function verifiAll(blockInfo) {
-    try {
-        // 1. Verifi MMR
-        // const isMMRValid = await verifyMMR(blockInfo);
-        // console.log('Check MMR:', isMMRValid);
-
-        // 2. Verifi transaction (Chưa làm)
-        // for (const tx of blockInfo.transactionHashes) {
-        //     const isTxValid = await verifyTransaction(tx);
-        //     if (!isTxValid) {
-        //         console.error(`Transaction verification failed for ${tx}`);
-        //         return;
-        //     }
-        // }
-
-        // 3. Get recv address from bitcoin transaction (Chưa làm)
-
-        // 4. Release token to recv address
-        releaseToken(recvAddress, AMOUNT);
-
-        // 5. Lắng nghe event Transfer từ smartcontract POJAK
-        sm_pojaktoken.events.Transfer({
-            fromBlock: 'latest' 
-        })
-        .on('data', event => {
-            const transferEvent = new TransferEvent(
-                event.event,
-                event.returnValues.from,
-                event.returnValues.to,
-                event.returnValues.value,
-                event.transactionHash
-            );
-            if (transferEvents.length === 0 || JSON.stringify(transferEvents[transferEvents.length - 1]) !== JSON.stringify(transferEvent)) {
-                transferEvents.push(transferEvent);
-                console.log(transferEvent);
-            }
-        })
-
-    } catch (error) {
-        console.error('Error in verification process:', error);
-    }
-
     return true;
 }
 
 
 // 4. Lặp lại bước 1
 // Set the interval in milliseconds
-const interval = 5000; // 10 seconds
+const interval = 5000; // 5 seconds
 console.log('Listening new transaction...');
 
 setInterval(async () => {
@@ -229,10 +171,10 @@ setInterval(async () => {
         await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Verifi MMR, Transaction and Release token
-        // isMMRValid = await verifyMMR(blockInfo);
+        isMMRValid = await verifyMMR(blockInfo);
         console.log('Check MMR:', isMMRValid);
 
-        // isTnsValid = await verifyTransaction(blockInfo);
+        isTnsValid = await verifyTransaction(blockInfo);
         console.log('Check Transaction:', isTnsValid);
 
         if (isMMRValid && isTnsValid && isRecvValid) {

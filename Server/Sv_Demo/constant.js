@@ -633,8 +633,8 @@ module.exports = {
     SM_TX_ADDRESS: '0x',
     TX_ABI: [],
     
-    POJAK_ADDRESS: '0xd4f6EbfF005cF0E697F1baF9A74c35F81c426Ac8',
-    POJAK_ABI: [
+    BTC_ERC20_ADDRESS: '0xd4f6EbfF005cF0E697F1baF9A74c35F81c426Ac8',
+    BTC_ERC20_ABI: [
         {
             "inputs": [
                 {
