@@ -49,7 +49,7 @@ export default function card() {
     setLogin,
   } = useGlobalState();
 
-  const tokenAddress = "0xd4f6EbfF005cF0E697F1baF9A74c35F81c426Ac8";
+  const tokenAddress = "0x8a79fB1fF448714Bf31c22A389Cad0f54961d2B4";
 
   function fromClick() {
     const coin = document.querySelector(".coin");
@@ -212,7 +212,8 @@ export default function card() {
       const burnTokens = async (amount, btcRecv) => {
         try {
           const amountInWei = web3.utils.toWei(amount.toString(), "ether");
-
+          
+          console.log("Wallet1:", wallet1);
           const transaction = await tokenContract.methods
             .burn(amountInWei, btcRecv)
             .send({ from: wallet1 });
