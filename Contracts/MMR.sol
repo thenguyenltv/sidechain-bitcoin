@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-// File @wanseob/contracts/MMR.sol
+// Forked from File @wanseob/contracts/MMR.sol
 
 pragma solidity ^0.8.1;
-
 
 /**
  * @author Wanseob Lim <email@wanseob.com>
