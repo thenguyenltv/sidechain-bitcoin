@@ -97,7 +97,7 @@ async function fetchNewTransaction() {
 // - getMerkleProof(index) để lấy Merkle Proof của node leaf
 // Hàm này trả về các giá trị: proof.root, proof.width, proof.peakBagging, proof.siblings
 // - inclusionProof(root, width, index, BlockHash, peakBagging, siblings) 
-// để kiểm tra xem leaf có nằm trong Merkle Proof không
+// để kiểm tra xem leaf có nằm trong MMR không
 
 async function verifyMMR(blockInfo) {
     try {
@@ -123,7 +123,7 @@ async function verifyMMR(blockInfo) {
             throw new Error('Merkle proof is not valid');
         }
 
-        // Check if the block hash is included in the Merkle proof
+        // Check if the block hash is included in the MMR
         const isIncluded = await sm_mmr.methods.inclusionProof(
             proof.root,
             proof.width,
@@ -145,7 +145,7 @@ async function verifyTransaction(blockInfo) {
 }
 
 
-// 4. Lặp lại bước 1
+// 4. 
 // Set the interval in milliseconds
 const interval = 5000; // 5 seconds
 console.log('Listening new transaction...');
@@ -158,7 +158,6 @@ setInterval(async () => {
         // Fetch new transaction
         const blockInfo = await fetchNewTransaction();
         if (!blockInfo) {
-            // console.log('No new transaction available');
             return;
         }
         else {
