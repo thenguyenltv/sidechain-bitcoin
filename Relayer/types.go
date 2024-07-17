@@ -6,6 +6,7 @@ type BlockInfo struct {
 	BlockHeight       int64
 	MerkleRoot        string
 	TransactionHashes []string
+	RawTxs            []string
 }
 
 // Global array to hold block information

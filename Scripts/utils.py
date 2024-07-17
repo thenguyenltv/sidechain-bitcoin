@@ -4,12 +4,19 @@ import json
 
 import struct
 
+from flask import Flask, request, jsonify # type: ignore
+
 # Chuỗi hex ban đầu
 original_hex = "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"
 
 # Raw transaction bitcoin
 RAW_TX = "0100000001448264ebfc64ae753673b6e379e9d0f5173aa06b9a104212638aed380060670b00000000fd5f02004730440220441f0892393bd822b8419083a8a3f745f6446b50d6c1f2afbbd931f91539298c02200dd963b87536a65af64b5eeedd2528c7e5755328f67292b2eaf558326743304d01483045022100f9b1e81648c973c066c08ac3fe3db01f414287c03903e038c746d602dda6aa2802205d8a7ae6dd988c4e345c60164a055f63c54bbcb6aa42ee9b839d97fffbac4d3901483045022100f339b819c367810387a65fcd093ebb7387bdd846cf921dd7d4e04b63ab72463802204192ed69bd21fa9b8973a2a35de668eca4212337eed0e16624886cdd877d804c01483045022100ddc63b9cc944bda1ad8438d3d40bbd4c572c2f46cabbf703250cf4d8890bee4a022026db27da05cb8701b8105663a52fd678d6fbbd32ca4cf106732f5537d8e875c30147304402204e32943ce981f4080b4e9b420a9e90065982c99632513828c357495d231cbd26022017c7fd1e27e89d9278b51564c010f673d44ac9e340821111b3efaba4032904e3014cf155210362b19ea469a6f90f6a46589a59e0cf03b92cca9ad675a33263bf5b892b984b5b2102ce4c40ab57996aa18bb354c42e2633b98900144bda8df367f356bbed2cd4090b2102bd1ae55b1ac4af987e2570a9ce59900ab290cdfa4f990d5a55dbeb1d5df61cc521025c3e6463307ae607265dbea84935665a90c3fde706512ef04070247ab1772b8121026bdc22a8f2cc6a2a6a2efb48979b9606275358d5c02ebfd8e7f883630cd178372103f73d194d3507abf7eeee0433dcb529cdedd57d089c25a7f0a7c6e4c663d13eae21020fc50638dda38ea7dd759754eb0a603d06134ee6607e72d4340b038f21ba7d6657aeffffffff02e8030000000000001976a91439b404ffe8f8bed76116d2e5200753d4f600b2c288ac6c1d00000000000017a91421eb2398b15b72b1b863d22c6c5fb9c75e94e9278700000000"
 RAW_TX_TMP = "01000000000101d8cb7e580e4a231c7117448c4767dfaba2a77f88b1b987eb58be091ae15bb01f0200000000ffffffff0220a107000000000022512098f28de4e9b396f1fd92bab4297b074de934dba4ca53e92691268e7c08b20056cf7470200000000016001471c1c386a4772bbc7f39dc7c7e75a17ff5d1e924024830450221008d8d471f8b9711adf10ff4ca7d293c407a9d5f98d4bc53cb0c02f9c0e3466b4e02200a2f566a1d2d27f56ddd4b5c2ce8bfa4a9385ee1fb4590e1b6b91ea6061d8da3012103bbcd5914f15887ed609c6278c077241cd95f80dc199989f89f968ff007fe8c0000000000"
+
+
+app = Flask(__name__)
+
+@app.route('/run-python-script', methods=['POST'])
 
 def reverse_hex_endianness(hex_string):
     """
@@ -215,15 +222,47 @@ def get_transactions_from_json(filename):
     return transactions
 
 
-parsed_tx = parse_raw_transaction(RAW_TX)
-print(parsed_tx)
+# parsed_tx = parse_raw_transaction(RAW_TX)
+# print(parsed_tx)
 
-parsed_tx_hex = get_vin_vout_hex(RAW_TX)
-print(parsed_tx_hex)
+# parsed_tx_hex = get_vin_vout_hex(RAW_TX)
+# print(parsed_tx_hex)
 
-transactions = get_transactions_from_json("constant.json")
-converted_transactions = [reverse_hex_endianness(hex_str) for hex_str in transactions]
-target_txid = "4f3bc52aea597951609eaaf992e3d139f150a2492dbb1d2ab8a1439443a696f4"
-root, proof = get_merkle_proof(converted_transactions, target_txid)
-print("Merkle Root:", root) # 85687eb3dc2947f90d8154334be58243b3b07e6e37955aed15b58cfd076e912e
-print("Merkle Proof:", proof)
+# transactions = get_transactions_from_json("constant.json")
+# converted_transactions = [reverse_hex_endianness(hex_str) for hex_str in transactions]
+# target_txid = "4f3bc52aea597951609eaaf992e3d139f150a2492dbb1d2ab8a1439443a696f4"
+# root, proof = get_merkle_proof(converted_transactions, target_txid)
+# print("Merkle Root:", root) # 85687eb3dc2947f90d8154334be58243b3b07e6e37955aed15b58cfd076e912e
+# print("Merkle Proof:", proof)
+
+@app.route('/get-merkle-proof', methods=['POST'])
+def post_merkle_proof():
+    data = request.json
+    transactions = data.get("transactions", [])
+    target_txid = data.get("target_txid", "")
+
+    converted_transactions = [reverse_hex_endianness(hex_str) for hex_str in transactions]
+    root, proof = get_merkle_proof(converted_transactions, target_txid)
+
+    return jsonify({
+        "merkle_root": root,
+        "merkle_proof": proof
+    })
+
+# How to use:
+# curl -X POST http://localhost:5000/get-merkle-proof -H "Content-Type: application/json" -d '{"transactions": ["de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0", "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"], "target_txid": "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"}'
+# or using Postman: POST http://localhost:5000/get-merkle-proof with JSON body {"transactions": ["de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0", "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"], "target_txid": "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"}
+# or using JavaScript: fetch('http://localhost:5000/get-merkle-proof', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({"transactions": ["de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0", "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"], "target_txid": "de7a1f2a8a8a54357196fddb37c90d41cd48d48251b5517f3a454c21eb970cf0"}}).then(res => res.json()).then(console.log)
+
+# Post to get_vin_vout_hex
+@app.route('/get-vin-vout-hex', methods=['POST'])
+def post_vin_vout_hex():
+    data = request.json
+    raw_tx = data.get("raw_tx", "")
+    parsed_tx_hex = get_vin_vout_hex(raw_tx)
+
+    return jsonify(parsed_tx_hex)
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

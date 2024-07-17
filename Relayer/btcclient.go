@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 
+	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 )
@@ -52,6 +54,15 @@ func getBlockInfo(btcClient *rpcclient.Client, blockHash *chainhash.Hash) (Block
 	return blockInfo, nil
 }
 
+func getRawTransaction(btcClient *rpcclient.Client, txHash *chainhash.Hash) (*btcutil.Tx, error) {
+	tx, err := btcClient.GetRawTransaction(txHash)
+	if err != nil {
+		return nil, err
+	}
+	// Convert bytes to hex string
+	return tx, nil
+}
+
 func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Request) {
 	// Ensure method is POST
 	if r.Method != "POST" {
@@ -93,13 +104,30 @@ func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Re
 	if err != nil {
 		log.Fatalf("Failed to get block: %v", err)
 	}
+	newBlock := BlockData{
+		Block:           tmpBlock,
+		RawTransactions: []string{},
+	}
 	haveTarget := false
 	for _, tx := range tmpBlock.Transactions {
 		if isTargetingSidechain(tx) {
 			fmt.Println("Found target transaction in this block")
-			blockTargets = append(blockTargets, tmpBlock)
 			haveTarget = true
-			break
+			// blockTargets = append(blockTargets, tmpBlock)
+			txHash, err := chainhash.NewHashFromStr(tx.TxHash().String())
+			if err != nil {
+				log.Fatalf("Failed to get transaction hash: %v", err)
+			}
+			rawTx, err := getRawTransaction(btcClient, txHash)
+			if err != nil {
+				log.Fatalf("Failed to get raw transaction: %v", err)
+			}
+			txBytes, err := rawTx.MsgTx().Serialize()
+			if err != nil {
+				log.Fatalf("Failed to serialize transaction: %v", err)
+			}
+			rawStr := hex.EncodeToString(txBytes)
+			newBlock.RawTransactions = append(newBlock.RawTransactions, rawStr)
 		}
 	}
 	if !haveTarget {
