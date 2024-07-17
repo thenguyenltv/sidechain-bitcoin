@@ -42,11 +42,22 @@ class TransferEvent {
 }
 
 class BlockInfo{
-    constructor(blockHash, blockHeight, merkleRoot, transactionHashes){
+    constructor(blockHash, blockHeight, merkleRoot, transactionHashes, rawTxs){
         this.blockHash = blockHash;
         this.blockHeight = blockHeight;
         this.merkleRoot = merkleRoot;
-        this.transactionHashes = transactionHashes;
+        this.TxIds = transactionHashes;
+        this.rawTx = rawTxs;
+    }
+}
+
+class TxInfo{
+    constructor(txHash, version, inputVector, outputVector, locktime){
+        this.txHash = txHash;
+        this.version = version;
+        this.vin = inputVector;
+        this.vout = outputVector;
+        this.locktime = locktime;
     }
 }
 
@@ -59,7 +70,8 @@ async function fetchNewTransaction() {
             BlockHash: hash, 
             BlockHeight: height, 
             MerkleRoot: merkleRoot, 
-            TransactionHashes: transactions 
+            TransactionHashes: transactions
+            // add: rawTxs: rawTxs
         } = response.data;
 
         // If the block hash is the same as the last processed block hash, return null
@@ -67,12 +79,12 @@ async function fetchNewTransaction() {
             return null;
         }
 
-        // gán giá trị vào blockInfo
         let blockInfo = new BlockInfo(
             hash, 
             height, 
             merkleRoot, 
             transactions
+            // rawTxs
         );
 
         // Update the last processed block hash
@@ -140,6 +152,29 @@ async function verifyMMR(blockInfo) {
 }
 
 // 3. Xác minh transaction thông qua SM_TNX_BTC
+
+// Các hàm bổ trợ phân tích giao dịch Bitcoin
+async function parseRawTx(rawTx) {
+    const response = await fetch('http://localhost:5000/get-vin-vout-hex', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({"raw_tx": rawTx})
+    });
+    const data = await response.json();
+    return data;
+}
+
+// get merkle proof
+async function getMerkleProof(transactions, target_txid) {
+    const response = await fetch('http://localhost:5000/get-merkle-proof', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ "transactions": transactions, "target_txid": target_txid })
+    });
+    const data = await response.json();
+    return data;
+}
+
 async function verifyTransaction(blockInfo) {
     return true;
 }
@@ -149,6 +184,9 @@ async function verifyTransaction(blockInfo) {
 // Set the interval in milliseconds
 const interval = 5000; // 5 seconds
 console.log('Listening new transaction...');
+
+// Store the block information
+blockInfos = [];
 
 setInterval(async () => {
     try {
@@ -166,8 +204,11 @@ setInterval(async () => {
             console.log('\tBlock Height:', blockInfo.blockHeight);
         }
 
+        // Add the block information to the array
+        blockInfos.push(blockInfo);
+
         // đợi khoảng 30s để chắc chắn rằng block đã được thêm vào MMR
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        // await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Verifi MMR, Transaction and Release token
         isMMRValid = await verifyMMR(blockInfo);
@@ -179,6 +220,8 @@ setInterval(async () => {
         if (isMMRValid && isTnsValid && isRecvValid) {
             console.log('All verifications passed');
         }
+
+        // Get EVM address of the receiver and amount of token
 
         // Release token to recv address if all verifications passed
         checkTokenReleased =  await releaseToken(recvAddress, AMOUNT);
