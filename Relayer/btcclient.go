@@ -60,8 +60,6 @@ func getRawTransaction(btcClient *rpcclient.Client, txHash *chainhash.Hash) (*bt
 		return nil, err
 	}
 
-	fmt.Printf("tx in getRawTransaction: %v\n", tx)
-
 	return tx, nil
 }
 
@@ -124,9 +122,6 @@ func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Re
 			if err != nil {
 				log.Fatalf("Failed to get raw transaction: %v", err)
 			}
-
-			fmt.Printf("rawTx: %v\n", rawTx)
-			fmt.Printf("rawTx.MsgTx(): %v\n", rawTx.MsgTx())
 
 			newBlock.RawTransactions = append(newBlock.RawTransactions, rawTx.MsgTx())
 

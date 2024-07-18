@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"log"
-	"strings"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -27,21 +28,100 @@ func isTargetingSidechain(btcTx *wire.MsgTx) bool {
 }
 
 // Hàm chuyển đổi txIn thành chuỗi hex
+//
+//	type TxIn struct {
+//	    PreviousOutPoint OutPoint
+//	    SignatureScript  []byte
+//	    Witness          TxWitness
+//	    Sequence         uint32
+//	}
+// func txInToHex(txIns []*wire.TxIn) string {
+// 	var hexValues []string
+// 	for _, txIn := range txIns {
+// 		hexValues = append(hexValues, fmt.Sprintf("%x", txIn.PreviousOutPoint)) // outpoint = hash + index
+
+// 		// number of bytes in the signature script
+// 		hexValues = append(hexValues, fmt.Sprintf("%x", len(txIn.SignatureScript)))
+
+// 		hexValues = append(hexValues, fmt.Sprintf("%x", txIn.SignatureScript))
+
+// 		hexValues = append(hexValues, fmt.Sprintf("%x", txIn.Sequence))
+// 	}
+// 	return strings.Join(hexValues, ",")
+// }
+
+// txInToHex takes a slice of *wire.TxIn and returns a hex string of the input vector.
 func txInToHex(txIns []*wire.TxIn) string {
-	var hexValues []string
+	var buffer bytes.Buffer
+
 	for _, txIn := range txIns {
-		// Giả sử TxIn có một trường bạn muốn chuyển đổi, ví dụ: SignatureScript
-		hexValues = append(hexValues, fmt.Sprintf("%x", txIn.SignatureScript))
+		// Manually serialize the PreviousOutPoint
+		hash := txIn.PreviousOutPoint.Hash[:]
+		buffer.Write(hash)
+
+		index := make([]byte, 4)
+		binary.LittleEndian.PutUint32(index, txIn.PreviousOutPoint.Index)
+		buffer.Write(index)
+
+		// Serialize the SignatureScript length as a varint
+		scriptLen := uint64(len(txIn.SignatureScript))
+		binary.Write(&buffer, binary.LittleEndian, scriptLen)
+
+		// Serialize the SignatureScript
+		buffer.Write(txIn.SignatureScript)
+
+		// Serialize the Sequence
+		binary.Write(&buffer, binary.LittleEndian, txIn.Sequence)
 	}
-	return strings.Join(hexValues, ",")
+
+	// Convert the bytes to a hex string
+	return hex.EncodeToString(buffer.Bytes())
 }
 
-// Hàm chuyển đổi txOut thành chuỗi hex
+// // Hàm chuyển đổi txOut thành chuỗi hex
+// func txOutToHex(txOuts []*wire.TxOut) string {
+// 	var hexValues []string
+// 	for _, txOut := range txOuts {
+// 		// Giả sử TxOut có một trường bạn muốn chuyển đổi, ví dụ: PkScript
+// 		hexValues = append(hexValues, fmt.Sprintf("%x", txOut.PkScript))
+// 	}
+// 	return strings.Join(hexValues, ",")
+// }
+
+// txOutToHex chuyển đổi txOuts thành chuỗi hex.
 func txOutToHex(txOuts []*wire.TxOut) string {
-	var hexValues []string
+	var buffer bytes.Buffer
+
 	for _, txOut := range txOuts {
-		// Giả sử TxOut có một trường bạn muốn chuyển đổi, ví dụ: PkScript
-		hexValues = append(hexValues, fmt.Sprintf("%x", txOut.PkScript))
+		// Serialize giá trị Value dưới dạng little-endian
+		binary.Write(&buffer, binary.LittleEndian, txOut.Value)
+
+		// Serialize độ dài của PkScript dưới dạng varint
+		pkScriptLen := uint64(len(txOut.PkScript))
+		binary.Write(&buffer, binary.LittleEndian, pkScriptLen)
+
+		// Serialize PkScript
+		buffer.Write(txOut.PkScript)
 	}
-	return strings.Join(hexValues, ",")
+
+	// Chuyển buffer thành chuỗi hex
+	hexString := hex.EncodeToString(buffer.Bytes())
+
+	return hexString
+}
+
+// Hàm chuyển Locktime thành chuỗi hex
+func locktimeToHex(locktime uint32) string {
+	lockTimeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(lockTimeBytes, locktime)
+
+	return hex.EncodeToString(lockTimeBytes)
+}
+
+// Hàm chuyển đổi Version thành chuỗi hex
+func versionToHex(version int32) string {
+	versionBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(versionBytes, uint32(version))
+
+	return hex.EncodeToString(versionBytes)
 }

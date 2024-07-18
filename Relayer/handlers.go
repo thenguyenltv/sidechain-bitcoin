@@ -95,16 +95,14 @@ func newTargetTnxHandler(w http.ResponseWriter, r *http.Request) {
 		blockInfo.TransactionHashes = append(blockInfo.TransactionHashes, tx.TxHash().String())
 	}
 
-	// Maybe wrong here
 	for _, tx := range blockTarget.RawTransactions {
 		rawTx := &RawTransaction{
 			Hash:     tx.TxHash().String(), // bonus infor
-			Ver:      fmt.Sprintf("%x", tx.Version),
+			Ver:      versionToHex(tx.Version),
 			Vin:      txInToHex(tx.TxIn),
 			Vout:     txOutToHex(tx.TxOut),
-			Locktime: fmt.Sprintf("%x", tx.LockTime),
+			Locktime: locktimeToHex(tx.LockTime),
 		}
-		fmt.Printf("rawTx add to blockInfo: %v\n", rawTx)
 		blockInfo.RawTxs = append(blockInfo.RawTxs, rawTx)
 	}
 
@@ -129,14 +127,23 @@ func getTnxHandler(btcClient *rpcclient.Client) http.HandlerFunc {
 		}
 		fmt.Print(txid)
 
-		txRaw, err := btcClient.GetRawTransaction(txid)
+		txUtil, err := btcClient.GetRawTransaction(txid)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		tx := txUtil.MsgTx()
+
+		rawTx := &RawTransaction{
+			Hash:     tx.TxHash().String(), // bonus infor
+			Ver:      versionToHex(tx.Version),
+			Vin:      txInToHex(tx.TxIn),
+			Vout:     txOutToHex(tx.TxOut),
+			Locktime: locktimeToHex(tx.LockTime),
+		}
 
 		// return the transaction as JSON
-		txJson, err := json.Marshal(txRaw)
+		txJson, err := json.Marshal(rawTx)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
