@@ -47,7 +47,7 @@ class BlockInfo{
         this.blockHeight = blockHeight;
         this.merkleRoot = merkleRoot;
         this.TxIds = transactionHashes;
-        this.rawTx = rawTxs;
+        this.rawTxs = rawTxs;
     }
 }
 
@@ -70,8 +70,8 @@ async function fetchNewTransaction() {
             BlockHash: hash, 
             BlockHeight: height, 
             MerkleRoot: merkleRoot, 
-            TransactionHashes: transactions
-            // add: rawTxs: rawTxs
+            TransactionHashes: transactions,
+            rawTxs: rawTxs
         } = response.data;
 
         // If the block hash is the same as the last processed block hash, return null
@@ -79,12 +79,13 @@ async function fetchNewTransaction() {
             return null;
         }
 
+        // How to store rawTxs in the database
         let blockInfo = new BlockInfo(
             hash, 
             height, 
             merkleRoot, 
-            transactions
-            // rawTxs
+            transactions,
+            rawTxs
         );
 
         // Update the last processed block hash
@@ -175,9 +176,46 @@ async function getMerkleProof(transactions, target_txid) {
     return data;
 }
 
-async function verifyTransaction(blockInfo) {
+// verify tx hash by call method getHashId in smart contract
+async function verifyTxHash(tx) {
+    try {
+        const txHashId = await sm_tx.methods.getHashId(tx.version, tx.vin, tx.vout, tx.locktime).call();
+        return txHashId;
+    } catch (error) {
+        console.error('Error verifying tx hash:', error.message);
+    }
+}
+
+// verify transaction in merkle tree
+async function verifyProof(root, proof, target_txid) {
+    try {
+        // do something here 
+
+        return true;
+    } catch (error) {
+        console.error('Error verifying transaction:', error.message);
+    }
+}
+
+async function verifyTransaction(blockInfo, target_txid) {
+    // verify tx hash before verify merkle proof
+    // use func verifyTxHash
+    // Before: find the rawTx with target_txid
+
+    // Then: call function verifyTxHash 
+
+
+    // get merkle proof
+    const merkleProof = await getMerkleProof(blockInfo.TxIds, target_txid);
+
+    // call method verifyTxHash in smart contract
+    const txHashId = await verifyProof(blockInfo.merkleRoot, merkleProof, target_txid);
+
     return true;
 }
+
+// Important: Get EVM address of the receiver and amount of token
+// Call function extractEvmAddressFromOutput in smart contract
 
 
 // 4. 
