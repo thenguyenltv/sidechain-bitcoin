@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +9,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
+	"github.com/btcsuite/btcd/wire"
 )
 
 func connectToBitcoinCore() *rpcclient.Client {
@@ -59,7 +59,9 @@ func getRawTransaction(btcClient *rpcclient.Client, txHash *chainhash.Hash) (*bt
 	if err != nil {
 		return nil, err
 	}
-	// Convert bytes to hex string
+
+	fmt.Printf("tx in getRawTransaction: %v\n", tx)
+
 	return tx, nil
 }
 
@@ -106,11 +108,11 @@ func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Re
 	}
 	newBlock := BlockData{
 		Block:           tmpBlock,
-		RawTransactions: []string{},
+		RawTransactions: []*wire.MsgTx{},
 	}
 	haveTarget := false
 	for _, tx := range tmpBlock.Transactions {
-		if isTargetingSidechain(tx) {
+		if !isTargetingSidechain(tx) {
 			fmt.Println("Found target transaction in this block")
 			haveTarget = true
 			// blockTargets = append(blockTargets, tmpBlock)
@@ -122,23 +124,30 @@ func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Re
 			if err != nil {
 				log.Fatalf("Failed to get raw transaction: %v", err)
 			}
-			txBytes, err := rawTx.MsgTx().Serialize()
-			if err != nil {
-				log.Fatalf("Failed to serialize transaction: %v", err)
-			}
-			rawStr := hex.EncodeToString(txBytes)
-			newBlock.RawTransactions = append(newBlock.RawTransactions, rawStr)
+
+			fmt.Printf("rawTx: %v\n", rawTx)
+			fmt.Printf("rawTx.MsgTx(): %v\n", rawTx.MsgTx())
+
+			newBlock.RawTransactions = append(newBlock.RawTransactions, rawTx.MsgTx())
+
+			// Just run 1 tx for now
+			break
 		}
 	}
+
+	// Add block to blockTargets
+	blockTargets = append(blockTargets, &newBlock)
+
 	if !haveTarget {
 		fmt.Println("No target transaction in this block")
 	}
 
 	fmt.Printf("New Bitcoin block: %s\n\n", body)
-	// Respond to the client
+
+	// Respond to the client (optional)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Block data received and processed"))
-	defer r.Body.Close() // Close the request body
+	defer r.Body.Close()
 }
 
 func startBlockNotificationServer(btcClient *rpcclient.Client) {

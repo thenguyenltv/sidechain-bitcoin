@@ -78,7 +78,7 @@ func getBlockHandler(btcClient *rpcclient.Client) http.HandlerFunc {
 }
 
 func newTargetTnxHandler(w http.ResponseWriter, r *http.Request) {
-	if len(blockTargets) == 0 || *lastBlockHash != blockTargets[len(blockTargets)-1].BlockHash() {
+	if len(blockTargets) == 0 || *lastBlockHash != blockTargets[len(blockTargets)-1].Block.BlockHash() {
 		http.Error(w, "No target block available", http.StatusNotFound)
 		return
 	}
@@ -88,11 +88,24 @@ func newTargetTnxHandler(w http.ResponseWriter, r *http.Request) {
 	blockInfo := BlockInfo{
 		BlockHash:   lastBlockHash.String(),
 		BlockHeight: lastBlockHeight,
-		MerkleRoot:  blockTarget.Header.MerkleRoot.String(),
+		MerkleRoot:  blockTarget.Block.Header.MerkleRoot.String(),
 	}
 
-	for _, tx := range blockTarget.Transactions {
+	for _, tx := range blockTarget.Block.Transactions {
 		blockInfo.TransactionHashes = append(blockInfo.TransactionHashes, tx.TxHash().String())
+	}
+
+	// Maybe wrong here
+	for _, tx := range blockTarget.RawTransactions {
+		rawTx := &RawTransaction{
+			Hash:     tx.TxHash().String(), // bonus infor
+			Ver:      fmt.Sprintf("%x", tx.Version),
+			Vin:      txInToHex(tx.TxIn),
+			Vout:     txOutToHex(tx.TxOut),
+			Locktime: fmt.Sprintf("%x", tx.LockTime),
+		}
+		fmt.Printf("rawTx add to blockInfo: %v\n", rawTx)
+		blockInfo.RawTxs = append(blockInfo.RawTxs, rawTx)
 	}
 
 	blockJson, err := json.Marshal(blockInfo)
