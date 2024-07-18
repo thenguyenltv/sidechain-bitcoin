@@ -10,8 +10,8 @@ const {
     MMR_ABI,
     SM_TX_ADDRESS,
     TX_ABI,
-    POJAK_ADDRESS,
-    POJAK_ABI,
+    BTC_ERC20_ADDRESS,
+    BTC_ERC20_ABI,
     CHAIN_ID
 } = require('./constant');
 
@@ -24,7 +24,7 @@ const web3 = new Web3(new Web3.providers.HttpProvider(`https://sepolia.infura.io
 const sm_mmr = new web3.eth.Contract(MMR_ABI, SM_MMR_ADDRESS);
 // const sm_tx = new web3.eth.Contract(TX_ABI, SM_TX_ADDRESS);
 
-const sm_pojaktoken = new web3.eth.Contract(POJAK_ABI, POJAK_ADDRESS);
+const sm_pojaktoken = new web3.eth.Contract(BTC_ERC20_ABI, BTC_ERC20_ADDRESS);
 const AMOUNT = 0.00001;
 
 const accountMMR = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY_MMR);
@@ -41,15 +41,6 @@ class TransferEvent {
     }
 }
 
-class BlockInfo{
-    constructor(blockHash, blockHeight, merkleRoot, transactionHashes, rawTxs){
-        this.blockHash = blockHash;
-        this.blockHeight = blockHeight;
-        this.merkleRoot = merkleRoot;
-        this.TxIds = transactionHashes;
-        this.rawTxs = rawTxs;
-    }
-}
 
 class TxInfo{
     constructor(txHash, version, inputVector, outputVector, locktime){
@@ -58,6 +49,18 @@ class TxInfo{
         this.vin = inputVector;
         this.vout = outputVector;
         this.locktime = locktime;
+    }
+}
+
+class BlockInfo{
+    constructor(blockHash, blockHeight, merkleRoot, transactionHashes, rawTxs){
+        this.blockHash = blockHash;
+        this.blockHeight = blockHeight;
+        this.merkleRoot = merkleRoot;
+        this.TxIds = transactionHashes;
+        this.rawTxs = rawTxs;
+        // Ensure rawTxs is an array of TxInfo instances
+        // this.rawTxs = rawTxs.map(tx => new TxInfo(tx.txHash, tx.version, tx.vin, tx.vout, tx.locktime));
     }
 }
 
@@ -71,15 +74,24 @@ async function fetchNewTransaction() {
             BlockHeight: height, 
             MerkleRoot: merkleRoot, 
             TransactionHashes: transactions,
-            rawTxs: rawTxs
+            RawTxs: rawTxs
         } = response.data;
+
+        // console.log('Response:', response.data);
+
+        // console.log('Info of new block');
+        // console.log('\tBlock Hash:', hash);
+        // console.log('\tBlock Height:', height);
+        // console.log('\tMerkle Root:', merkleRoot);
+        // console.log('\tTransactions:', transactions);
+        // console.log('\tRaw Txs:', rawTxs[0].Vout);
 
         // If the block hash is the same as the last processed block hash, return null
         if (hash === lastProcessedBlockHash) {
             return null;
         }
 
-        // How to store rawTxs in the database
+        // Create a new block information object
         let blockInfo = new BlockInfo(
             hash, 
             height, 
@@ -87,6 +99,8 @@ async function fetchNewTransaction() {
             transactions,
             rawTxs
         );
+
+        // console.log('\tRaw Txs:', blockInfo.rawTxs[0].Vout);
 
         // Update the last processed block hash
         lastProcessedBlockHash = hash;
@@ -155,15 +169,15 @@ async function verifyMMR(blockInfo) {
 // 3. Xác minh transaction thông qua SM_TNX_BTC
 
 // Các hàm bổ trợ phân tích giao dịch Bitcoin
-async function parseRawTx(rawTx) {
-    const response = await fetch('http://localhost:5000/get-vin-vout-hex', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'}, 
-        body: JSON.stringify({"raw_tx": rawTx})
-    });
-    const data = await response.json();
-    return data;
-}
+// async function parseRawTx(rawTx) {
+//     const response = await fetch('http://localhost:5000/get-vin-vout-hex', {
+//         method: 'POST',
+//         headers: {'Content-Type': 'application/json'}, 
+//         body: JSON.stringify({"raw_tx": rawTx})
+//     });
+//     const data = await response.json();
+//     return data;
+// }
 
 // get merkle proof
 async function getMerkleProof(transactions, target_txid) {
@@ -249,11 +263,11 @@ setInterval(async () => {
         // await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Verifi MMR, Transaction and Release token
-        isMMRValid = await verifyMMR(blockInfo);
-        console.log('Check MMR:', isMMRValid);
+        // isMMRValid = await verifyMMR(blockInfo);
+        // console.log('Check MMR:', isMMRValid);
 
-        isTnsValid = await verifyTransaction(blockInfo);
-        console.log('Check Transaction:', isTnsValid);
+        // isTnsValid = await verifyTransaction(blockInfo);
+        // console.log('Check Transaction:', isTnsValid);
 
         if (isMMRValid && isTnsValid && isRecvValid) {
             console.log('All verifications passed');
