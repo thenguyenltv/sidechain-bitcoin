@@ -4,7 +4,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 )
 
-const TARGET_ADDRESS = "mkn4Txu4v9efkbVehjK4hydJhBBpbv6HuA"
+const TARGET_ADDRESS = "2MvLZyMwcAju7snmtEHHUqVmzK2GmMwKzs1"
 
 var (
 	lastBlockHash   *chainhash.Hash

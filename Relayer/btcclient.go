@@ -110,7 +110,7 @@ func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Re
 	}
 	haveTarget := false
 	for _, tx := range tmpBlock.Transactions {
-		if !isTargetingSidechain(tx) {
+		if isTargetingSidechain(tx) {
 			fmt.Println("Found target transaction in this block")
 			haveTarget = true
 			// blockTargets = append(blockTargets, tmpBlock)
@@ -131,7 +131,9 @@ func blockHandler(btcClient *rpcclient.Client, w http.ResponseWriter, r *http.Re
 	}
 
 	// Add block to blockTargets
-	blockTargets = append(blockTargets, &newBlock)
+	if haveTarget {
+		blockTargets = append(blockTargets, &newBlock)
+	}
 
 	if !haveTarget {
 		fmt.Println("No target transaction in this block")
