@@ -22,14 +22,14 @@ const API_RELAYER = '/new-target-tnx';
 
 const web3 = new Web3(new Web3.providers.HttpProvider(`https://sepolia.infura.io/v3/${INFURA_ID}`));
 const sm_mmr = new web3.eth.Contract(MMR_ABI, SM_MMR_ADDRESS);
-// const sm_tx = new web3.eth.Contract(TX_ABI, SM_TX_ADDRESS);
+const sm_tx = new web3.eth.Contract(TX_ABI, SM_TX_ADDRESS);
 
 const sm_pojaktoken = new web3.eth.Contract(BTC_ERC20_ABI, BTC_ERC20_ADDRESS);
-const AMOUNT = 0.00001;
 
-const accountMMR = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY_MMR);
 const accountERC = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY_ERC);  
-const recvAddress = '0x7A16D9DFc229e67095b25783debdE9089E33b400';
+// const accountMMR = web3.eth.accounts.privateKeyToAccount(PRIVATE_KEY_MMR);
+// const recvAddress = '0x7A16D9DFc229e67095b25783debdE9089E33b400';
+// const AMOUNT = 0.00001;
 
 class TransferEvent {
     constructor(event, from, to, value, transactionHash) {
@@ -130,7 +130,6 @@ async function verifyMMR(blockInfo) {
     try {
         // Get the leaf index for the given block height
         var width = await sm_mmr.methods.getWidth().call();
-        console.log('Width:', width);
         if (!width) {
             throw new Error('Width is not valid');
         }
@@ -193,7 +192,7 @@ async function getMerkleProof(transactions, target_txid) {
 // verify tx hash by call method getHashId in smart contract
 async function verifyTxHash(tx) {
     try {
-        const txHashId = await sm_tx.methods.getHashId(tx.version, tx.vin, tx.vout, tx.locktime).call();
+        const txHashId = await sm_tx.methods.GetTxHash(tx.version, tx.vin, tx.vout, tx.locktime).call();
         return txHashId;
     } catch (error) {
         console.error('Error verifying tx hash:', error.message);
@@ -201,11 +200,11 @@ async function verifyTxHash(tx) {
 }
 
 // verify transaction in merkle tree
-async function verifyProof(root, proof, target_txid) {
+async function verifyProof(root, proof, txIndex, target_txid) {
     try {
         // do something here 
-
-        return true;
+        const isProve = await sm_tx.methods.ProveTx(target_txid, root, proof, txIndex).call();
+        return isProve;
     } catch (error) {
         console.error('Error verifying transaction:', error.message);
     }
@@ -215,22 +214,36 @@ async function verifyTransaction(blockInfo, target_txid) {
     // verify tx hash before verify merkle proof
     // use func verifyTxHash
     // Before: find the rawTx with target_txid
-
+    let txIndex = blockInfo.TxIds.indexOf(target_txid);
     // Then: call function verifyTxHash 
+    const txHash = await verifyTxHash(blockInfo.rawTxs[index]);
+    if (txHash !== target_txid) {
+        throw new Error('Tx hash is not valid');
+    }
 
-
-    // get merkle proof
+    // get merkle proof by list of txids and target_txid
     const merkleProof = await getMerkleProof(blockInfo.TxIds, target_txid);
 
     // call method verifyTxHash in smart contract
-    const txHashId = await verifyProof(blockInfo.merkleRoot, merkleProof, target_txid);
+    let isProve = await verifyProof(blockInfo.merkleRoot, merkleProof, txIndex, target_txid);
+    if (!isProve) {
+        throw new Error('Transaction is not valid');
+    }
 
-    return true;
+    return isProve;
 }
 
 // Important: Get EVM address of the receiver and amount of token
 // Call function extractEvmAddressFromOutput in smart contract
-
+async function callProcessTxOutputs(outputVector, scriptPubKeyHash) {
+    try {
+        const result = await contract.methods.ProcessTxOutputs(outputVector, scriptPubKeyHash).call();
+        console.log('Result:', result);
+        return result; // const { value, evmAddress } = result;
+    } catch (error) {
+        console.error('Error calling the smart contract function:', error);
+    }
+}
 
 // 4. 
 // Set the interval in milliseconds
@@ -260,23 +273,28 @@ setInterval(async () => {
         blockInfos.push(blockInfo);
 
         // đợi khoảng 30s để chắc chắn rằng block đã được thêm vào MMR
-        // await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 30000));
         
         // Verifi MMR, Transaction and Release token
-        // isMMRValid = await verifyMMR(blockInfo);
-        // console.log('Check MMR:', isMMRValid);
+        isMMRValid = await verifyMMR(blockInfo);
+        console.log('Check MMR:', isMMRValid);
 
-        // isTnsValid = await verifyTransaction(blockInfo);
-        // console.log('Check Transaction:', isTnsValid);
+        isTnsValid = await verifyTransaction(blockInfo);
+        console.log('Check Transaction:', isTnsValid);
 
         if (isMMRValid && isTnsValid && isRecvValid) {
             console.log('All verifications passed');
+        } else {
+            console.log('Some verifications failed');
+            return;
         }
 
         // Get EVM address of the receiver and amount of token
+        // const { value, evmAddress } = await callProcessTxOutputs(blockInfo.rawTxs[0].Vout, blockInfo.rawTxs[0].Vout[0].scriptPubKey.hex);
+
 
         // Release token to recv address if all verifications passed
-        checkTokenReleased =  await releaseToken(recvAddress, AMOUNT);
+        // checkTokenReleased =  await releaseToken(evmAddress, value);
         console.log('Check release:', checkTokenReleased);
     } catch (error) {
         console.error('Error in verification process:', error);
