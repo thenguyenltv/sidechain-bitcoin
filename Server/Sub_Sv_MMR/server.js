@@ -57,10 +57,18 @@ async function createAndSendTransaction(data) {
 async function fetchLatestBlock() {
     try {
         const response = await axios.get(`${SV_RELAYER}${API_RELAYER}`);
-        const { hash, height } = response.data;
-        return { hash, height };
+        if (response.status === 200) {
+            const { hash, height } = response.data;
+            return { hash, height };
+        } else {
+            if (response.status === 404) {
+                console.error('No block');
+            } else {
+                console.error('Error fetching data:', response.statusText);
+            }
+        }
     } catch (error) {
-        console.error('Error fetching data:', error);
+        // console.error('Error fetching data:', error.message);
     }
 }
 
