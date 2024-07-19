@@ -17,6 +17,7 @@ const {
 
 const SV_RELAYER = 'http://localhost:8080';
 const API_RELAYER = '/new-target-tnx';
+const PUBKEY_HASH = '33631f2105b7da2aa66bea45876bfe73e0494ea4beb22e90b7a516b4ee55ec59';
 // const testHashBlock = '0000000070abdb5469cf67ce53cede2c8deb386bc31675576af8d692ca95bebe';
 
 
@@ -268,6 +269,46 @@ async function callProcessTxOutputs(outputVector, scriptPubKeyHash) {
     }
 }
 
+//     function transfer(address recipient, uint256 amount) external returns (bool);
+async function releaseToken(toAddress, amount) {
+    try {
+        const amountInWei = web3.utils.toWei(amount.toString(), 'ether');
+        console.log('Amount in Wei:', amountInWei);
+        const encodedData = sm_pojaktoken.methods.transfer(toAddress, amountInWei).encodeABI();
+
+        const maxPriorityFeePerGas = web3.utils.toWei('1', 'gwei'); // Example priority fee
+        const estimatedGas = await web3.eth.estimateGas({
+            from: accountERC.address,
+            to: POJAK_ADDRESS,
+            data: encodedData
+        });
+        const baseFee = await web3.eth.getBlock('latest').then(block => block.baseFeePerGas * BigInt(150)/BigInt(100));
+        const maxFeePerGas = web3.utils.toHex(BigInt(baseFee) + BigInt(maxPriorityFeePerGas));
+
+        const rawTx = {
+            nonce: '0x' + (await web3.eth.getTransactionCount(accountERC.address)).toString(16),
+            maxPriorityFeePerGas: maxPriorityFeePerGas,
+            maxFeePerGas: maxFeePerGas,
+            gasLimit: web3.utils.toHex(estimatedGas),
+            from: accountERC.address,
+            to: POJAK_ADDRESS,
+            value: '0x00',
+            data: encodedData,
+            type: '0x2', // Specify EIP-1559 transaction type
+            chainId: CHAIN_ID
+        };
+
+        console.log('--------Raw Tnx--------\n', rawTx);
+
+        const signedTx = await web3.eth.accounts.signTransaction(rawTx, accountERC.privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
+
+        return receipt.status;
+    } catch (error) {
+        console.error('Error releasing token:', error);
+    }
+}
+
 // 4. 
 // Set the interval in milliseconds
 const interval = 20000; // 5 seconds
@@ -317,11 +358,11 @@ setInterval(async () => {
         }
 
         // Get EVM address of the receiver and amount of token
-        // const { value, evmAddress } = await callProcessTxOutputs(blockInfo.rawTxs[0].Vout, blockInfo.rawTxs[0].Vout[0].scriptPubKey.hex);
+        const { value, evmAddress } = await callProcessTxOutputs(blockInfo.rawTxs[0].Vout, PUBKEY_HASH);
 
 
         // Release token to recv address if all verifications passed
-        // checkTokenReleased =  await releaseToken(evmAddress, value);
+        checkTokenReleased =  await releaseToken(evmAddress, value);
         console.log('Check release:', checkTokenReleased);
     } catch (error) {
         console.error('Error in verification process:', error);
@@ -329,44 +370,6 @@ setInterval(async () => {
 }, interval);
 
 
-//     function transfer(address recipient, uint256 amount) external returns (bool);
-async function releaseToken(toAddress, amount) {
-    try {
-        const amountInWei = web3.utils.toWei(amount.toString(), 'ether');
-        console.log('Amount in Wei:', amountInWei);
-        const encodedData = sm_pojaktoken.methods.transfer(toAddress, amountInWei).encodeABI();
 
-        const maxPriorityFeePerGas = web3.utils.toWei('1', 'gwei'); // Example priority fee
-        const estimatedGas = await web3.eth.estimateGas({
-            from: accountERC.address,
-            to: POJAK_ADDRESS,
-            data: encodedData
-        });
-        const baseFee = await web3.eth.getBlock('latest').then(block => block.baseFeePerGas * BigInt(150)/BigInt(100));
-        const maxFeePerGas = web3.utils.toHex(BigInt(baseFee) + BigInt(maxPriorityFeePerGas));
-
-        const rawTx = {
-            nonce: '0x' + (await web3.eth.getTransactionCount(accountERC.address)).toString(16),
-            maxPriorityFeePerGas: maxPriorityFeePerGas,
-            maxFeePerGas: maxFeePerGas,
-            gasLimit: web3.utils.toHex(estimatedGas),
-            from: accountERC.address,
-            to: POJAK_ADDRESS,
-            value: '0x00',
-            data: encodedData,
-            type: '0x2', // Specify EIP-1559 transaction type
-            chainId: CHAIN_ID
-        };
-
-        console.log('--------Raw Tnx--------\n', rawTx);
-
-        const signedTx = await web3.eth.accounts.signTransaction(rawTx, accountERC.privateKey);
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction);
-
-        return receipt.status;
-    } catch (error) {
-        console.error('Error releasing token:', error);
-    }
-}
 
 
