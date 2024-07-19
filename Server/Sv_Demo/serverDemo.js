@@ -109,7 +109,7 @@ async function fetchNewTransaction() {
     } catch (error) {
         if (error.response && error.response.status === 404) {
             // No target block available
-            console.error('No target block available');
+            // console.error('No target block available');
         } else {
             // Handle error without printing
             console.error(error.message);
@@ -137,14 +137,14 @@ async function verifyMMR(blockInfo) {
         // blockInfo.blockHeight = parseInt(blockInfo.blockHeight);
         blockInfo.blockHeight = width;
         const leafIndex = await sm_mmr.methods.getLeafIndex(blockInfo.blockHeight).call();
-        console.log('Leaf Index:', leafIndex);
+        // console.log('Leaf Index:', leafIndex);
         if (!leafIndex) {
             throw new Error('Leaf index is not valid');
         }
 
         // Get the Merkle proof for the leaf node
         const proof = await sm_mmr.methods.getMerkleProof(leafIndex).call();
-        console.log('Merkle Proof:', proof);
+        // console.log('Merkle Proof:', proof);
         if (!proof) {
             throw new Error('Merkle proof is not valid');
         }
@@ -192,7 +192,12 @@ async function getMerkleProof(transactions, target_txid) {
 // verify tx hash by call method getHashId in smart contract
 async function verifyTxHash(tx) {
     try {
-        const txHashId = await sm_tx.methods.GetTxHash(tx.version, tx.vin, tx.vout, tx.locktime).call();
+        const txHashId = await sm_tx.methods.GetTxHash(
+            '0x' + tx.Ver, 
+            '0x' + tx.Vin,
+            '0x' + tx.Vout,
+            '0x' + tx.Locktime
+        ).call();
         return txHashId;
     } catch (error) {
         console.error('Error verifying tx hash:', error.message);
@@ -203,7 +208,12 @@ async function verifyTxHash(tx) {
 async function verifyProof(root, proof, txIndex, target_txid) {
     try {
         // do something here 
-        const isProve = await sm_tx.methods.ProveTx(target_txid, root, proof, txIndex).call();
+        const isProve = await sm_tx.methods.ProveTx(
+            target_txid, 
+            '0x' + root, 
+            '0x' + proof, 
+            txIndex)
+        .call();
         return isProve;
     } catch (error) {
         console.error('Error verifying transaction:', error.message);
@@ -211,18 +221,28 @@ async function verifyProof(root, proof, txIndex, target_txid) {
 }
 
 async function verifyTransaction(blockInfo, target_txid) {
+    console.log('Target Tx:', target_txid);
     // verify tx hash before verify merkle proof
     // use func verifyTxHash
     // Before: find the rawTx with target_txid
     let txIndex = blockInfo.TxIds.indexOf(target_txid);
+    console.log('TxIndex:', txIndex);
+    let rawIndex = blockInfo.rawTxs.findIndex(tx => tx.Hash === target_txid);
+    console.log('RawIndex:', rawIndex);
     // Then: call function verifyTxHash 
-    const txHash = await verifyTxHash(blockInfo.rawTxs[index]);
+    const txHash = await verifyTxHash(blockInfo.rawTxs[rawIndex]);
+    console.log('Tx Hash:', txHash);
     if (txHash !== target_txid) {
         throw new Error('Tx hash is not valid');
     }
+    console.log('Check Tx Hash:', txHash);
 
     // get merkle proof by list of txids and target_txid
     const merkleProof = await getMerkleProof(blockInfo.TxIds, target_txid);
+    if (!merkleProof) {
+        throw new Error('Merkle proof is not valid');
+    }
+    console.log("Merkle proof", merkleProof);
 
     // call method verifyTxHash in smart contract
     let isProve = await verifyProof(blockInfo.merkleRoot, merkleProof, txIndex, target_txid);
@@ -237,7 +257,10 @@ async function verifyTransaction(blockInfo, target_txid) {
 // Call function extractEvmAddressFromOutput in smart contract
 async function callProcessTxOutputs(outputVector, scriptPubKeyHash) {
     try {
-        const result = await contract.methods.ProcessTxOutputs(outputVector, scriptPubKeyHash).call();
+        const result = await contract.methods.ProcessTxOutputs(
+            '0x' + outputVector, 
+            scriptPubKeyHash)
+        .call();
         console.log('Result:', result);
         return result; // const { value, evmAddress } = result;
     } catch (error) {
@@ -247,10 +270,10 @@ async function callProcessTxOutputs(outputVector, scriptPubKeyHash) {
 
 // 4. 
 // Set the interval in milliseconds
-const interval = 5000; // 5 seconds
+const interval = 20000; // 5 seconds
 console.log('Listening new transaction...');
 
-// Store the block information
+// Store the block information`
 blockInfos = [];
 
 setInterval(async () => {
@@ -273,14 +296,18 @@ setInterval(async () => {
         blockInfos.push(blockInfo);
 
         // đợi khoảng 30s để chắc chắn rằng block đã được thêm vào MMR
-        await new Promise(resolve => setTimeout(resolve, 30000));
+        await new Promise(resolve => setTimeout(resolve, 20000));
         
         // Verifi MMR, Transaction and Release token
         isMMRValid = await verifyMMR(blockInfo);
         console.log('Check MMR:', isMMRValid);
 
-        isTnsValid = await verifyTransaction(blockInfo);
-        console.log('Check Transaction:', isTnsValid);
+        console.log('Check transaction...');
+        for (let i = 0; i < blockInfo.rawTxs.length; i++) {
+            isTnsValid = await verifyTransaction(blockInfo, blockInfo.rawTxs[i].Hash);
+            // print result of each blockInfo.rawTxs[i].txHash
+            console.log(`Transaction ${blockInfo.rawTxs[i].Hash}, Verification Result: ${isTnsValid}`);
+        }
 
         if (isMMRValid && isTnsValid && isRecvValid) {
             console.log('All verifications passed');
