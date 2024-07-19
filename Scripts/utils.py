@@ -16,8 +16,6 @@ RAW_TX_TMP = "01000000000101d8cb7e580e4a231c7117448c4767dfaba2a77f88b1b987eb58be
 
 app = Flask(__name__)
 
-@app.route('/run-python-script', methods=['POST'])
-
 def reverse_hex_endianness(hex_string):
     """
     Đảo ngược endianness của một chuỗi hex.
