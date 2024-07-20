@@ -49,7 +49,7 @@ export default function card() {
     setLogin,
   } = useGlobalState();
 
-  const tokenAddress = "0x8a79fB1fF448714Bf31c22A389Cad0f54961d2B4";
+  const tokenAddress = "0xaE3A87221A45D11b3DB66C5a2414bd3f7728eEf5";
 
   function fromClick() {
     const coin = document.querySelector(".coin");
@@ -215,7 +215,7 @@ export default function card() {
           
           console.log("Wallet1:", wallet1);
           const transaction = await tokenContract.methods
-            .burn(amountInWei, btcRecv)
+            .withdraw(btcRecv, amountInWei)
             .send({ from: wallet1 });
 
           console.log("Tokens burned:", amount);
