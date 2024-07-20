@@ -457,10 +457,10 @@ export default function card() {
                         Copy
                       </button>
                     </div>
-                    <p className="text-xs font-semibold leading-6 text-red-600 mb-4">
+                    <p className="text-xs font-semibold leading-6 text-red-600">
                       Sent over {amount} BTC to your wallet to above address.
                     </p>
-                    <p className="text-xs leading-6 text-gray-900">
+                    <p className="text-xs font-semibold leading-6 text-red-600 mb-4">
                       Your Deposit will be linked to{" "}
                       {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}
                     </p>
