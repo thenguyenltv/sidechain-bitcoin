@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"io"
 	"log"
 
 	"github.com/btcsuite/btcd/chaincfg"
@@ -50,9 +51,35 @@ func isTargetingSidechain(btcTx *wire.MsgTx) bool {
 // 	return strings.Join(hexValues, ",")
 // }
 
+func writeVarint(w io.Writer, n uint64) error {
+	if n < 0xfd {
+		return binary.Write(w, binary.LittleEndian, uint8(n))
+	} else if n <= 0xffff {
+		err := binary.Write(w, binary.LittleEndian, uint8(0xfd))
+		if err != nil {
+			return err
+		}
+		return binary.Write(w, binary.LittleEndian, uint16(n))
+	} else if n <= 0xffffffff {
+		err := binary.Write(w, binary.LittleEndian, uint8(0xfe))
+		if err != nil {
+			return err
+		}
+		return binary.Write(w, binary.LittleEndian, uint32(n))
+	} else {
+		err := binary.Write(w, binary.LittleEndian, uint8(0xff))
+		if err != nil {
+			return err
+		}
+		return binary.Write(w, binary.LittleEndian, n)
+	}
+}
+
 // txInToHex takes a slice of *wire.TxIn and returns a hex string of the input vector.
 func txInToHex(txIns []*wire.TxIn) string {
 	var buffer bytes.Buffer
+	// Write the number of inputs as a varint
+	writeVarint(&buffer, uint64(len(txIns)))
 
 	for _, txIn := range txIns {
 		// Manually serialize the PreviousOutPoint
@@ -65,7 +92,7 @@ func txInToHex(txIns []*wire.TxIn) string {
 
 		// Serialize the SignatureScript length as a varint
 		scriptLen := uint64(len(txIn.SignatureScript))
-		binary.Write(&buffer, binary.LittleEndian, scriptLen)
+		writeVarint(&buffer, scriptLen)
 
 		// Serialize the SignatureScript
 		buffer.Write(txIn.SignatureScript)
@@ -91,14 +118,15 @@ func txInToHex(txIns []*wire.TxIn) string {
 // txOutToHex chuyển đổi txOuts thành chuỗi hex.
 func txOutToHex(txOuts []*wire.TxOut) string {
 	var buffer bytes.Buffer
-
+	// write the number of outputs as a varint
+	writeVarint(&buffer, uint64(len(txOuts)))
 	for _, txOut := range txOuts {
 		// Serialize giá trị Value dưới dạng little-endian
 		binary.Write(&buffer, binary.LittleEndian, txOut.Value)
 
 		// Serialize độ dài của PkScript dưới dạng varint
 		pkScriptLen := uint64(len(txOut.PkScript))
-		binary.Write(&buffer, binary.LittleEndian, pkScriptLen)
+		writeVarint(&buffer, pkScriptLen)
 
 		// Serialize PkScript
 		buffer.Write(txOut.PkScript)

@@ -7,6 +7,8 @@ from bitcoin import SelectParams
 import requests
 import sys
 
+from getpass import getpass
+
 VIRTUAL_SIZE = 280
 
 def get_value(txid, output_index):
@@ -65,6 +67,11 @@ def create_txout_refund(amount, destination_address):
     return CMutableTxOut(nValue=amount, scriptPubKey=destination_script)
 
 def create_txout_opreturn(data):
+    # Loại bỏ 0x của data nếu có
+    if data[:2] == '0x':
+        data = data[2:]
+    # Chuyển data thành byte
+    data = bytes.fromhex(data)
     return CMutableTxOut(nValue=0, scriptPubKey=CScript([OP_RETURN, data]))
 
 def create_signed_transaction(txins, txouts, private_key):
@@ -98,7 +105,7 @@ def main():
     try:
         SelectParams('testnet')
 
-        privatek = input("Enter your private key: ")
+        privatek = getpass("Enter your private key: ")
         amount_to_send = int(input("Enter the amount to send (in satoshis): "))
         opreturn_data = input("Enter your sidechain address: ")
         destination_address = vault_address
@@ -117,7 +124,7 @@ def main():
         # Create transaction outputs
         txout = create_txout(amount_to_send, destination_address)
         change_txout = create_txout_refund(refund_amount, str(address))
-        opreturn_txout = create_txout_opreturn(opreturn_data.encode('utf-8'))
+        opreturn_txout = create_txout_opreturn(opreturn_data)
         txouts = [txout, change_txout, opreturn_txout]
         
         # Print transaction details

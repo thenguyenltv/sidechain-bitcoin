@@ -49,7 +49,7 @@ export default function card() {
     setLogin,
   } = useGlobalState();
 
-  const tokenAddress = "0x8a79fB1fF448714Bf31c22A389Cad0f54961d2B4";
+  const tokenAddress = "0xaE3A87221A45D11b3DB66C5a2414bd3f7728eEf5";
 
   function fromClick() {
     const coin = document.querySelector(".coin");
@@ -215,7 +215,7 @@ export default function card() {
           
           console.log("Wallet1:", wallet1);
           const transaction = await tokenContract.methods
-            .burn(amountInWei, btcRecv)
+            .withdraw(btcRecv, amountInWei)
             .send({ from: wallet1 });
 
           console.log("Tokens burned:", amount);
@@ -458,12 +458,12 @@ export default function card() {
                       </button>
                     </div>
                     <p className="text-xs font-semibold leading-6 text-red-600 mb-4">
-                      Sent over {amount} BTC to your wallet to above address.
+                      Send {amount} BTC to the address above.<br />
+                      Ensure your EVM address is included in the op_return:<br />
+                      {wallet1}
                     </p>
-                    <p className="text-xs leading-6 text-gray-900">
-                      Your Deposit will be linked to{" "}
-                      {wallet1.slice(0, 6) + "..." + wallet1.slice(-4)}
-                    </p>
+
+
                     <p className="text-xs leading-6 text-gray-900">
                     Do not send less than the amount or your deposit will be rejected
                     </p>

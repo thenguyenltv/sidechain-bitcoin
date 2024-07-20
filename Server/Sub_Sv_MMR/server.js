@@ -42,7 +42,7 @@ async function createAndSendTransaction(data) {
             chainId: CHAIN_ID
         };
 
-        console.log("--------Raw Tnx--------\n", rawTx);
+        // console.log("--------Raw Tnx--------\n", rawTx);
 
         account.signTransaction(rawTx).then(signed => {
             web3.eth.sendSignedTransaction(signed.rawTransaction)
