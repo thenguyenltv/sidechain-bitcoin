@@ -125,7 +125,6 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, sentAddr
 
 	redeemTx := wire.NewMsgTx(wire.TxVersion)
 
-	// Create TxIn
 	// Get unspent transaction output
 	utxos := GetUnspentUtxos(sentAddr)
 	if utxos == nil {
@@ -133,16 +132,18 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, sentAddr
 	}
 
 	// Select UTXOs
-	VIRTUAL_SIZE := 280
+	VIRTUAL_SIZE := 350
 	fee := GetFeeRate() * int64(VIRTUAL_SIZE)
 	selectedUtxos, selectedIndexes, selectedValues := SelectUTXOs(utxos.(AddressUTXO), amount+fee, sentAddr)
 
+	// Create multiple txIns
 	var totalValue int64
 	for i, utxo := range selectedUtxos {
 		utxoHash, err := chainhash.NewHashFromStr(utxo)
 		if err != nil {
 			return nil, "", err
 		}
+
 		//_, value := utils.ParseTransaction(utxo, sentAddr)
 		outPoint := wire.NewOutPoint(utxoHash, uint32(selectedIndexes[i]))
 		txIn := wire.NewTxIn(outPoint, nil, nil)
@@ -192,6 +193,9 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, sentAddr
 		return nil, "", err
 	}
 
+	myRedeemTxOut := wire.NewTxOut(totalValue-amount-fee, myDestinationAddrByte)
+	redeemTx.AddTxOut(myRedeemTxOut)
+
 	// //-- OP_RETURN--
 	// opReturnScript, err := txscript.NewScriptBuilder().AddOp(txscript.OP_RETURN).AddData([]byte(opReturnData)).Script()
 	// if err != nil {
@@ -200,40 +204,41 @@ func SpendMultiSig(wifStrs []string, redeemScript []byte, amount int64, sentAddr
 	// opReturnTxOut := wire.NewTxOut(0, opReturnScript)
 	// redeemTx.AddTxOut(opReturnTxOut)
 
-	myRedeemTxOut := wire.NewTxOut(totalValue-amount-fee, myDestinationAddrByte)
-	redeemTx.AddTxOut(myRedeemTxOut)
 
 	// signing the tx
-	sigs := make([][]byte, len(privKeys))
-	for i := 0; i < len(privKeys); i++ {
-		sig, err := txscript.RawTxInSignature(redeemTx, 0, redeemScript, txscript.SigHashAll, privKeys[i])
+	for i := 0; i < len(redeemTx.TxIn); i++ {
+		fmt.Println(i)
+		sigs := make([][]byte, len(privKeys))
+		for j := 0; j < len(privKeys); j++ {
+			sig, err := txscript.RawTxInSignature(redeemTx, i, redeemScript, txscript.SigHashAll, privKeys[j])
+			if err != nil {
+				return nil, "", err
+			}
+			sigs[j] = sig
+		}
+
+		signature := txscript.NewScriptBuilder()
+		signature.AddOp(txscript.OP_FALSE)
+		// Add the signatures
+		for _, sig := range sigs {
+			signature.AddData(sig)
+		}
+		signature.AddData(redeemScript)
+
+		signatureScript, err := signature.Script()
 		if err != nil {
+			// Handle the error
 			return nil, "", err
 		}
-		sigs[i] = sig
-
+		redeemTx.TxIn[i].SignatureScript = signatureScript
 	}
-
-	signature := txscript.NewScriptBuilder()
-	signature.AddOp(txscript.OP_FALSE)
-	// Add the signatures
-	for _, sig := range sigs {
-		signature.AddData(sig)
-	}
-	signature.AddData(redeemScript)
-
-	signatureScript, err := signature.Script()
-	if err != nil {
-		// Handle the error.
-		return nil, "", err
-	}
-
-	redeemTx.TxIn[0].SignatureScript = signatureScript
-
+	//redeemTx.TxIn[0].SignatureScript = signatureScript
 	var signedTx bytes.Buffer
 	redeemTx.Serialize(&signedTx)
 
 	hexSignedTx := hex.EncodeToString(signedTx.Bytes())
-	//fmt.Println("Signed Transaction: ", hexSignedTx)
+	fmt.Println("Signed Transaction: ", hexSignedTx)
 	return signedTx.Bytes(), hexSignedTx, nil
 }
+
+

@@ -36,7 +36,7 @@ func Fund(wifStrs []string, m int, amount int64, sentAddr string, recvAddr strin
 
 func broadcastTx(signedTx []byte) {
 	url := "https://mempool.space/testnet/api/tx"
-
+	//url := "https://blockstream.info/testnet/tx/push"
 	// Prepare for raw data
 	rawTx := hex.EncodeToString(signedTx)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(rawTx)))
