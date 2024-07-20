@@ -4,6 +4,8 @@ const Tx = require('ethereumjs-tx').Transaction;
 
 const data = require('../../Scripts/constant.json');
 const testTxIds = data.transactions;
+const TIMEINTERVAL = 10000;
+const TIMEMMR = 30000;
 
 
 const {
@@ -345,7 +347,7 @@ async function releaseToken(toAddress, amount) {
 
 // 4. 
 // Set the interval in milliseconds
-const interval = 10000; // 5 seconds
+const interval = TIMEINTERVAL; // 5 seconds
 let lastProcessedBlockHeight = 0; // Giả sử bắt đầu từ 0
 console.log('Listening new transaction...');
 
@@ -385,7 +387,7 @@ setInterval(async () => {
                     
 
             // đợi khoảng 30s để chắc chắn rằng block đã được thêm vào MMR
-            await new Promise(resolve => setTimeout(resolve, 30000));
+            await new Promise(resolve => setTimeout(resolve, TIMEMMR));
 
             // Verifi MMR, Transaction and Release token
             isMMRValid = await verifyMMR(blockInfo);
@@ -412,7 +414,7 @@ setInterval(async () => {
 
                 // Release token to recv address if all verifications passed
                 checkTokenReleased = await releaseToken(evmAddress, value);
-                console.log('Check release:', checkTokenReleased);
+                console.log('Check release:', checkTokenReleased, '\n');
             }
         }
 

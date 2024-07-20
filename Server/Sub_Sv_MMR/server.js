@@ -4,6 +4,7 @@ const Tx = require('ethereumjs-tx').Transaction;
 
 const SV_RELAYER = 'http://localhost:8080';
 const API_RELAYER = '/latest-block';
+const TIMEINTERVAl = 5000;
 
 const {
     INFURA_PROJECT_ID,
@@ -46,8 +47,8 @@ async function createAndSendTransaction(data) {
 
         account.signTransaction(rawTx).then(signed => {
             web3.eth.sendSignedTransaction(signed.rawTransaction)
-                .on('receipt', receipt => console.log(receipt.transactionHash))
-                .on('error', error => console.error("Transaction failed:", error.message));
+                .on('receipt', receipt => console.log(receipt.transactionHash, "\n"))
+                .on('error', error => console.error("Transaction failed:", error.message, "\n"));
         });
     } catch (error) {
         console.error('Error creating and sending transaction:', error);
@@ -120,5 +121,5 @@ async function fetchAndStoreBlockHash() {
     }
 }
 
-setInterval(fetchAndStoreBlockHash, 5000); // 5s
+setInterval(fetchAndStoreBlockHash, TIMEINTERVAl); // 5s
 
