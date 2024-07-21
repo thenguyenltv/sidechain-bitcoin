@@ -2,43 +2,30 @@ package multisig
 
 import (
 	"bytes"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	"go-multisig/utils"
-	"github.com/btcsuite/btcd/btcutil"
 )
 
 
 
-func Fund(wifStrs []string, m int, amount int64, sentAddr string, recvAddr string) {
-	pubKeys := make([]*PublicKey, len(wifStrs))
-	for i := 0; i < len(wifStrs); i++ {
-		wif, err := btcutil.DecodeWIF(wifStrs[i])
-		if err != nil {
-			panic(err)
-		}
-		pubKeys[i] = wif.PrivKey.PubKey()
-	}
-
-
+func Fund(amount int64, sentAddr string, recvAddr string) {
+	// Get the redeem script from the sending address info
 	disasmRedeemscript := utils.ReadNeededMultisigInfo(sentAddr)
 	redeemScript := utils.ParseDiasmRedeemScript(disasmRedeemscript)
 
-	signedTx, _, _ := SpendMultiSig(wifStrs[:m], redeemScript, amount, sentAddr, recvAddr)
+	
+	signedTx, _ := CreateRawTx(redeemScript, amount, sentAddr, recvAddr)
 
 	broadcastTx(signedTx)
-
 }
 
-func broadcastTx(signedTx []byte) {
-	url := "https://mempool.space/testnet/api/tx"
-	//url := "https://blockstream.info/testnet/tx/push"
-	// Prepare for raw data
-	rawTx := hex.EncodeToString(signedTx)
+func broadcastTx(rawTx string) {
+	//url := "https://mempool.space/testnet/api/tx"
+	url := "https://blockstream.info/testnet/api/tx"
+
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(rawTx)))
 	if err != nil {
 		fmt.Println("Error creating request:", err)
@@ -61,8 +48,10 @@ func broadcastTx(signedTx []byte) {
 		return
 	}
 
-	fmt.Println("Body: ", string(body))
-	var result map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&result)
-	fmt.Println("Result: ", result)
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("\033[31mERROR: ", string(body), "\033[0m")
+	} else {
+		fmt.Println("\033[32mSUCCESS. CHECKOUT TRANSACTION ID: ", string(body), "\033[0m")
+	}
+
 }

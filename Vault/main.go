@@ -4,14 +4,15 @@ import (
 	"flag"
 	"go-multisig/multisig"
 	"go-multisig/utils"
-	"strings"
 
 	"fmt"
 	"os"
 )
 
-var vaultAddr = "2MvLZyMwcAju7snmtEHHUqVmzK2GmMwKzs1"
+var (
+	vaultAddr = "2MvLZyMwcAju7snmtEHHUqVmzK2GmMwKzs1"
 
+)
 
 func help() {
     addressCmd := flag.NewFlagSet("address", flag.ExitOnError)
@@ -19,10 +20,8 @@ func help() {
 	addressN := addressCmd.Int("n", 0, "Total number of keys (required)")
 
     fundCmd := flag.NewFlagSet("fund", flag.ExitOnError)
-    fundWif := fundCmd.String("wif", "", "Comma-separated list of WIFs (required)")
-    fundM := fundCmd.Int("m", 0, "Minimum keys for spending (required)")
 	fundAmount := fundCmd.Int64("amount", 0, "Amount to spend (required)")
-	fundSentAddr := fundCmd.String("sent", "", "Sending address (required)")
+	//fundSentAddr := fundCmd.String("sent", "", "Sending address (required)")
     fundRecvAddr := fundCmd.String("recv", "", "Receiving address (required)")
 
     // Usage Function
@@ -66,19 +65,18 @@ func help() {
 
 	case "fund":
 		fundCmd.Parse(os.Args[2:])
-		if *fundM == 0 || *fundAmount == 0 || *fundWif == "" || *fundSentAddr == "" || *fundRecvAddr == ""  {
+		if *fundAmount == 0 || *fundRecvAddr == ""  {
 			fundCmd.PrintDefaults()
 			return
 		}
 		// Convert WIFs to a slice of strings
-		wifStrs := strings.Split(*fundWif, ",")
-		multisig.Fund(wifStrs, *fundM, *fundAmount, *fundSentAddr, *fundRecvAddr)
+		//wifStrs := strings.Split(*fundWif, ",")
+		multisig.Fund(*fundAmount, vaultAddr, *fundRecvAddr)
 
 	default:
 		flag.Usage()
 	}
 }
-
 
 
 func main() {
