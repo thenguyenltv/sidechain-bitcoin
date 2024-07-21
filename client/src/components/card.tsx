@@ -49,7 +49,7 @@ export default function card() {
     setLogin,
   } = useGlobalState();
 
-  const tokenAddress = "0xaE3A87221A45D11b3DB66C5a2414bd3f7728eEf5";
+  const tokenAddress = "0xdDB9E7B01182886cE03f2d1Af16a7b7989Cf42aE";
 
   function fromClick() {
     const coin = document.querySelector(".coin");

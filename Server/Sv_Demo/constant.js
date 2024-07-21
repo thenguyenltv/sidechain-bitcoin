@@ -811,7 +811,7 @@ module.exports = {
         }
     ],
     
-    BTC_ERC20_ADDRESS: '0x8C4e677447666E84640840DEE3E993A71dd6578e',
+    BTC_ERC20_ADDRESS: '0xdDB9E7B01182886cE03f2d1Af16a7b7989Cf42aE',
     BTC_ERC20_ABI: [
         {
             "inputs": [],

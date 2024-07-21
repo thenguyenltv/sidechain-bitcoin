@@ -9,7 +9,7 @@ import sys
 
 from getpass import getpass
 
-VIRTUAL_SIZE = 280
+VIRTUAL_SIZE = 260
 
 def get_value(txid, output_index):
     url = f'https://mempool.space/testnet/api/tx/{txid}'
@@ -74,13 +74,23 @@ def create_txout_opreturn(data):
     data = bytes.fromhex(data)
     return CMutableTxOut(nValue=0, scriptPubKey=CScript([OP_RETURN, data]))
 
+# def create_signed_transaction(txins, txouts, private_key):
+#     tx = CMutableTransaction(txins, txouts)
+#     txin_scriptPubKey = CScript([OP_DUP, OP_HASH160, Hash160(private_key.pub), OP_EQUALVERIFY, OP_CHECKSIG])
+#     sighash = SignatureHash(txin_scriptPubKey, tx, 0, SIGHASH_ALL)
+#     signature = private_key.sign(sighash) + bytes([SIGHASH_ALL])
+#     txins[0].scriptSig = CScript([signature, private_key.pub])
+#     VerifyScript(txins[0].scriptSig, txin_scriptPubKey, tx, 0, (SCRIPT_VERIFY_P2SH,))
+#     return tx
+
 def create_signed_transaction(txins, txouts, private_key):
     tx = CMutableTransaction(txins, txouts)
     txin_scriptPubKey = CScript([OP_DUP, OP_HASH160, Hash160(private_key.pub), OP_EQUALVERIFY, OP_CHECKSIG])
-    sighash = SignatureHash(txin_scriptPubKey, tx, 0, SIGHASH_ALL)
-    signature = private_key.sign(sighash) + bytes([SIGHASH_ALL])
-    txins[0].scriptSig = CScript([signature, private_key.pub])
-    VerifyScript(txins[0].scriptSig, txin_scriptPubKey, tx, 0, (SCRIPT_VERIFY_P2SH,))
+    for i in range(len(txins)):
+        sighash = SignatureHash(txin_scriptPubKey, tx, i, SIGHASH_ALL)
+        signature = private_key.sign(sighash) + bytes([SIGHASH_ALL])
+        txins[i].scriptSig = CScript([signature, private_key.pub])
+        VerifyScript(txins[i].scriptSig, txin_scriptPubKey, tx, i, (SCRIPT_VERIFY_P2SH,))
     return tx
 
 def broadcast_tx(signed_tx):
